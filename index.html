@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.72.0</h1>
+<h1 id="gameTitle">F1 Career v0.73.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -228,6 +228,11 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
     nello schermo e costringevano a scorrere dentro la scheda per scoprire che
     esisteva anche Partenza. Tutto piu' piccolo, tutto visibile insieme. */
  .plRow{flex-wrap:nowrap;gap:8px;margin:9px 0;align-items:center}
+ #dgStats .plRow,#plStats .plRow{margin:7px 0}
+ #dgStats .plRow button,#plStats .plRow button{padding:7px 9px;font-size:11px}
+ #dgCard{max-height:92vh}
+ #dgCard h2{font-size:20px;margin:0 0 4px}
+ #dgCard .sub{font-size:12px;margin:0 0 10px}
  .plRow .nm{flex:1 1 auto!important;font-size:12px;min-width:0;
    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  .plRow .bar{flex:0 0 62px;min-width:62px;order:0}
@@ -249,10 +254,15 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 .dgScroll{flex:1;min-height:0;overflow:auto;margin-top:6px}
 #dgAvanti{text-align:center;margin-top:16px;padding:18px;font-size:18px;flex:0 0 auto}
 #dgIndietro{margin-top:10px;padding:9px;font-size:12px;text-align:center;flex:0 0 auto}
-/* Il pulsante +1 e' un comando in riga, non un blocco: senza questa riga la
-   regola generale dei pulsanti nelle schede lo stira su tutta la larghezza e
-   la barra della statistica finisce chissa' dove. */
-#dgStats .plRow button,#plStats .plRow button{display:inline-block;width:auto}
+/* Il pulsante +1 e' un comando in riga, non un blocco. ".homeCard button" e'
+   scritta piu' in basso nel foglio e a parita' di forza vince, quindi gli
+   imponeva larghezza piena, 14 px di padding e 8 di margine: da li' le righe
+   alte duecento pixel e le sei statistiche che non entravano. Qui si usa un
+   selettore piu' forte e si rimette tutto, non solo la larghezza. */
+#dgStats .plRow button,#plStats .plRow button{
+ display:inline-block;width:auto;margin:0;padding:8px 10px;font-size:12px;
+ min-height:0;text-align:center;line-height:1.1}
+#dgStats .plRow,#plStats .plRow{margin:10px 0}
 #careerSecondari button{font-size:12px;padding:8px 11px}
 /* QUALIFICA (v0.65.0) - Era una barra fissa in fondo allo SCHERMO. Su telefono
    il testo dei riferimenti la faceva crescere in altezza finche' il pulsante da
@@ -429,7 +439,7 @@ body.carriera #topPanel{display:none}
       <button id="homeNew"><b>NUOVA CARRIERA</b><br><span class="small">Crea il tuo pilota. Le gare seguono il calendario.</span></button>
       <button id="homeContinue"><b>CONTINUA CARRIERA</b><br><span class="small" id="homeContinueInfo">Nessuna carriera salvata.</span></button>
       <button id="homeFree"><b>GARA LIBERA</b><br><span class="small">Scegli circuito, giri e pilota.</span></button>
-      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.72.0</div>
+      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.73.0</div>
       <button id="installBtn" style="display:none"><b>INSTALLA SUL TELEFONO</b><br><span class="small">Icona sulla schermata iniziale, schermo intero, funziona senza rete.</span></button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="backupBtn" style="flex:1;width:auto;margin:0;padding:10px;font-size:12px;text-align:center">SALVA UNA COPIA</button>
