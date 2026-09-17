@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.68.0</h1>
+<h1 id="gameTitle">F1 Career v0.69.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -3403,6 +3403,11 @@ $("careerGoBtn").onclick=()=>{
  const cid=careerCircuitId();
  applyCircuit(cid);$("circuitSelect").value=cid;
  $("player").value=career.pilota;
+ // Senza questo, la bandiera della gara precedente restava alzata: la fascia
+ // diceva GARA CONCLUSA e la plancia - con dentro la gomma di partenza -
+ // restava nascosta, perche' si accende solo a gara non finita.
+ raceEnded=false;running=false;startPrepared=false;
+ $("startTyre").disabled=false;$("player").disabled=false;$("circuitSelect").disabled=false;
  const riprendo=weekendRipresa(cid);
  // gridOrder va deciso PRIMA di createCars: e' li' che la griglia diventa
  // l'ordine delle vetture in pista.
@@ -3658,17 +3663,35 @@ function qualiDelta(d){
  return (97-car)*.085+(97-drv)*.04+indole(d).quali;
 }
 function qPlayer(){return drivers.find(x=>x.id===$("player").value)||drivers[0];}
+// Quanto grande viene un'unita' di disegno sullo schermo. Serve perche' i
+// cerchi della qualifica sono disegnati nello spazio della pista: con un
+// raggio fisso di 13 unita' diventavano enormi su un circuito piccolo e piu'
+// piccoli della vettura su uno grande. Il bersaglio di un gioco di mira deve
+// essere sempre della stessa misura sotto il dito.
+function scalaPista(){
+ try{
+   const r=$("trackWrap").getBoundingClientRect();
+   const p=($("trackSvg").getAttribute("viewBox")||vbIntera).split(" ").map(Number);
+   if(!(p[2]>0&&p[3]>0&&r.width>0&&r.height>0))return 1;
+   return Math.min(r.width/p[2],r.height/p[3]);
+ }catch(e){return 1;}
+}
 function qClearMarks(){$("trackSvg").querySelectorAll(".qMark").forEach(n=>n.remove());
  const c=$("qualiCar");if(c)c.remove();}
 function qDrawMarks(){
  const svg=$("trackSvg"),path=$("trackPath");
+ const sc=scalaPista()||1;
  qTargets.forEach((t,i)=>{
    // svgPointAtFrac applica gia' layoutFrac: passargliela di nuovo spostava i
    // cerchi di startFrac rispetto alla vettura, cioe' di 1,07 s a Shanghai e di
    // 0,56 s a Melbourne. Bastava per far fallire ogni clic sul primo circuito.
    const p=svgPointAtFrac(path,t.f);
    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
-   c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r",13);
+   c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);
+   // 21 px di raggio sullo schermo: il doppio abbondante della vettura, che di
+   // pallino ne misura 15 piu' l'alone.
+   c.setAttribute("r",(21/sc).toFixed(1));
+   c.style.strokeWidth=(3.5/sc).toFixed(2);
    c.setAttribute("class","qMark");c.id="qmark-"+i;($("trackRot")||svg).appendChild(c);
  });
  const dot=document.createElement("div");dot.className="qCar";dot.id="qualiCar";
@@ -3692,7 +3715,7 @@ function qualiOpen(){
  const primo=Math.min(...qTargets.map(t=>t.f));
  Q_LANCIO=clamp(Q_PRIMO_MS/Q_LAP_MS-primo,.16,.6);
  qRunning=false;qProg=-Q_LANCIO;
- qClearMarks();qDrawMarks();qPlaceCar(((1-Q_LANCIO)%1+1)%1);
+ qClearMarks();
  $("qSub").textContent=`Qualifica · ${circuit.name}`;
  const tms=qualiTolleranzaMs(qPlayer());
  $("qHint").textContent=`Giro lanciato. Clicca quando la vettura è sul cerchio giallo: ${qTargets.map(t=>t.n).join(", ")}. Finestra utile ±${Math.round(tms)} ms.`;
@@ -3704,7 +3727,11 @@ function qualiOpen(){
  // Il pulsante che ha aperto la qualifica ora e' spento e ruba la riga che
  // serve a CLICCA IN CURVA: durante il giro sparisce.
  $("ctaRow").style.display="none";
+ // Prima si fissa l'altezza del riquadro, poi si disegnano i cerchi: il loro
+ // raggio dipende da quanto e' grande la pista sullo schermo, e misurarlo
+ // prima avrebbe dato il numero sbagliato.
  adattaAltezzaPista();aggiornaCamera();
+ qDrawMarks();qPlaceCar(((1-Q_LANCIO)%1+1)%1);
  qCountdown();
 }
 // Conto alla rovescia: cosi' l'unico comando e' AVVIA QUALIFICA e non serve
