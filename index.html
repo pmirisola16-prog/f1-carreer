@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.74.0</h1>
+<h1 id="gameTitle">F1 Career v0.76.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -147,7 +147,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
     <button id="qualiBtn">AVVIA QUALIFICA</button>
     <button id="camBtn">VISTA VICINA</button>
     <button id="devBtn">Strumenti tecnici</button>
-    <button id="prepare">Prepara partenza</button>
+    <button id="prepare" class="vai">PREPARA PARTENZA</button>
     <button id="simulateAI">SIMULA GARA AI</button>
     <button id="pause" disabled>Pausa</button>
     <label>Velocità
@@ -354,6 +354,9 @@ body.carriera #topPanel{display:none}
    fa ripartire una gara, e nessun dubbio su cosa si deve premere. */
 .vai{background:#1f7a3f;border-color:#35b365;color:#fff}
 .vai:hover:not(:disabled){background:#268a49}
+/* Da spento torna grigio e non solo piu' pallido: un verde slavato sembra
+   comunque un invito a premere, e in gara PREPARA PARTENZA e' spento. */
+.vai:disabled{background:#1b1f27;border-color:#2a3040;color:#c8ccd4}
 
 /* colonna dati: lato sinistro della pista */
 /* In gara la colonna dei dati non copre piu' il disegno: l'inquadratura si
@@ -443,7 +446,7 @@ body.carriera #topPanel{display:none}
       <button id="homeNew"><b>NUOVA CARRIERA</b><br><span class="small">Crea il tuo pilota. Le gare seguono il calendario.</span></button>
       <button id="homeContinue"><b>CONTINUA CARRIERA</b><br><span class="small" id="homeContinueInfo">Nessuna carriera salvata.</span></button>
       <button id="homeFree"><b>GARA LIBERA</b><br><span class="small">Scegli circuito, giri e pilota.</span></button>
-      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.74.0</div>
+      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.76.0</div>
       <button id="installBtn" style="display:none"><b>INSTALLA SUL TELEFONO</b><br><span class="small">Icona sulla schermata iniziale, schermo intero, funziona senza rete.</span></button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="backupBtn" style="flex:1;width:auto;margin:0;padding:10px;font-size:12px;text-align:center">SALVA UNA COPIA</button>
@@ -4069,6 +4072,11 @@ function hudVisibile(){
  document.body.classList.toggle("inGara",!!(running||startPrepared));
  $("hudSlotLaunch").style.display=startPrepared?"":"none";
  $("hudSlotLights").style.display=startPrepared?"flex":"none";
+ // PREPARA PARTENZA esiste solo finche' c'e' una partenza da preparare. Tenerlo
+ // li' spento occupava sessanta pixel di schermo per ricordare una cosa fatta.
+ // Sparendo, la riga si svuota e quello spazio torna alla pista da solo.
+ const serve=!casa&&weekend==="gara"&&!running&&!startPrepared&&!raceEnded&&cars&&cars.length;
+ $("prepare").style.display=serve?"":"none";
 }
 function hudRefresh(){
  hudVisibile();
