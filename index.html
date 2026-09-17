@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.66.0</h1>
+<h1 id="gameTitle">F1 Career v0.67.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel">
@@ -215,6 +215,23 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
    pulsante si prendeva tutto lo spazio e schiacciava la barra a zero. */
 .plRow button{flex:0 0 128px;width:auto;margin:0;padding:8px 10px;text-align:center;font-size:12px}
 .plRow .bar{min-width:80px}
+/* Le righe delle statistiche erano cucite su misura per il monitor: nome 150,
+   valore 34, pulsante 128, piu' la barra da 80 e tre spazi fa 422 px contro i
+   324 disponibili su un telefono. La scheda sforava, e con lo zoom bloccato
+   non restava che il taglio. Su schermo stretto la barra va a capo da sola. */
+.homeCard{max-width:min(620px,100%)}
+@media(max-width:720px){
+ .homeCard{padding:16px}
+ #dopoGara .homeCard,#pilota .homeCard,#classifiche .homeCard,#resoconto .homeCard,#offerte .homeCard{max-width:100%}
+ .homeCard h2{font-size:21px}
+ .plRow{flex-wrap:wrap;gap:8px 10px;margin:12px 0}
+ .plRow .nm{flex:1 1 auto!important;font-size:13px}
+ .plRow .vl{flex:0 0 30px}
+ .plRow button{flex:0 0 auto;font-size:11px;padding:7px 10px}
+ .plRow .bar{flex:1 1 100%;order:3;min-width:0}
+ .homeCard table{font-size:13px}
+ .homeCard th,.homeCard td{padding:6px 4px}
+}
 /* Il pulsante che porta avanti il weekend e' l'unica cosa da fare in quella
    schermata: sta al centro e occupa la riga. Gli altri quattro sono consultazione. */
 #careerGoBtn{display:block;width:100%;max-width:520px;margin:6px auto 12px;
@@ -284,17 +301,21 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 .primario:hover:not(:disabled){background:#2a6ce6}
 
 /* colonna dati: lato sinistro della pista */
-#sideHud{position:absolute;left:10px;top:44px;z-index:6;width:100px;
+/* In gara la colonna dei dati non copre piu' il disegno: l'inquadratura si
+   allarga a sinistra quel tanto che basta, cosi' il circuito le scorre
+   accanto invece che sotto. I numeri si rimpiccioliscono, perche' li leggi
+   con la coda dell'occhio mentre guardi la pista. */
+#sideHud{position:absolute;left:8px;top:40px;z-index:6;width:84px;
  display:none;flex-direction:column;gap:6px;pointer-events:none}
 #sideHud.on{display:flex}
 #sideHud .info{display:flex;flex-direction:column;gap:6px}
 #sideHud .cell{background:rgba(13,15,20,.84);border:1px solid #2a3040;
  border-radius:9px;padding:5px 8px}
 #sideHud .cell span{display:block;font-size:9px;letter-spacing:.08em;color:#8b93a7}
-#sideHud .cell b{display:block;font-size:20px;line-height:1.15}
-#sideHud #hTyre{font-size:14px}
-#sideHud #hGap{font-size:15px}
-#sideHud #hSC{font-size:13px}
+#sideHud .cell b{display:block;font-size:17px;line-height:1.15}
+#sideHud #hTyre{font-size:12px}
+#sideHud #hGap{font-size:13px}
+#sideHud #hSC{font-size:11px}
 #sideHud .en{width:100%;height:7px;background:#232a38;border-radius:6px;overflow:hidden;margin-top:4px}
 #sideHud .en i{display:block;height:100%;background:#4aa3ff}
 
@@ -330,9 +351,10 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
  #hud #boost,#hud #launch{flex:1 1 44%;min-height:70px;font-size:19px}
  #hud #pit{flex:1 1 44%;min-height:70px}
  #hud .pitCol{flex:1 1 44%}
- #sideHud{width:78px;top:40px;left:6px}
- #sideHud .cell b{font-size:17px}
- #sideHud .cell{padding:4px 6px}
+ #sideHud{width:68px;top:36px;left:6px}
+ #sideHud .cell{padding:3px 5px}
+ #sideHud .cell span{font-size:8px}
+ #sideHud .cell b{font-size:15px}
 }
 #quali .qWrap{max-width:1100px;margin:0 auto;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 #qHit{flex:0 0 210px;padding:22px;font-size:19px;font-weight:800;text-align:center}
@@ -499,6 +521,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
         <div id="safetyCarDot" class="safetyCar">SC</div>
         <div id="sideHud"></div>
         <svg id="trackSvg" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet">
+          <g id="trackRot">
           <path id="trackPath" class="trackBase"
             d="M150,405
                C105,355 105,290 145,250
@@ -525,6 +548,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
                C515,418 470,390 425,420
                C375,455 310,468 255,446
                C218,431 182,432 150,405 Z"/>
+          </g>
         </svg>
       </div>
       <div class="note" id="layoutNote">Layout Circuiti Precisi + Sorpassi 1.0: geometrie reali e zone di attacco specifiche per tutti i 24 circuiti, costruite sui punti di staccata e sulle zone DRS reali.</div>
@@ -1242,6 +1266,8 @@ let camVicina=false, camX=450, camY=260;
 // Inquadratura a vista intera. Non e' piu' la tela fissa 900x520: viene
 // ricalcolata sul disegno vero a ogni cambio di circuito (vedi setupTrack).
 let vbIntera="0 0 900 520";
+// Vero quando il disegno e' girato di 90 gradi per stare in uno schermo alto.
+let pistaRuotata=false;
 // Assistenza al boost: dichiarata qui perche' viene letta dentro update(),
 // molto prima nel file rispetto ai comandi che la modificano.
 const ASSIST_STORE="f1AssistBoost_v041";
@@ -2325,40 +2351,43 @@ function setupTrack(){
  // sopra la precedente. Con un solo circuito fisso non si notava; cambiando circuito
  // o candidata pit si sovrappongono tutte.
  svg.querySelectorAll(".zone,.zoneLabel,.landmark,.landmarkLabel,.startLine,.pitMark,.pitLabel,.pitLane,.pitLaneEdge,.pitStall,.pitStallLabel").forEach(n=>n.remove());
+ // Da qui in giu' si disegna dentro il gruppo, non nell'svg: il gruppo e' cio'
+ // che viene ruotato, e un elemento lasciato fuori resterebbe per traverso.
+ const gruppo=$("trackRot")||svg;
  wrap.querySelectorAll(".car").forEach(n=>n.remove());
 
  Object.entries(circuit.zones).forEach(([s,z])=>{
    const frac=z.f ?? ((Number(s)+.5)/SEGMENTS),p=svgPointAtFrac(path,frac);
    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
-   c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r",5);c.setAttribute("class","zone");svg.appendChild(c);
+   c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r",5);c.setAttribute("class","zone");gruppo.appendChild(c);
    const t=document.createElementNS("http://www.w3.org/2000/svg","text");
-   t.setAttribute("x",p.x+8);t.setAttribute("y",p.y-8);t.setAttribute("class","zoneLabel");t.textContent=z.name;svg.appendChild(t);
+   t.setAttribute("x",p.x+8);t.setAttribute("y",p.y-8);t.setAttribute("class","zoneLabel");t.textContent=z.name;gruppo.appendChild(t);
  });
  (layout.landmarks||[]).forEach(l=>{
    const p=svgPointAtFrac(path,l.f);
    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
-   c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r",2.5);c.setAttribute("class","landmark");svg.appendChild(c);
+   c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r",2.5);c.setAttribute("class","landmark");gruppo.appendChild(c);
    const t=document.createElementNS("http://www.w3.org/2000/svg","text");
-   t.setAttribute("x",p.x+6);t.setAttribute("y",p.y+13);t.setAttribute("class","landmarkLabel");t.textContent=l.n;svg.appendChild(t);
+   t.setAttribute("x",p.x+6);t.setAttribute("y",p.y+13);t.setAttribute("class","landmarkLabel");t.textContent=l.n;gruppo.appendChild(t);
  });
  // Start/finish: piccola linea trasversale calcolata dalla tangente della path.
  const f=0,p=svgPointAtFrac(path,f),p2=svgPointAtFrac(path,f+.003);
  const dx=p2.x-p.x,dy=p2.y-p.y,mag=Math.hypot(dx,dy)||1,nx=-dy/mag,ny=dx/mag;
  const line=document.createElementNS("http://www.w3.org/2000/svg","line");
- line.setAttribute("x1",p.x-nx*15);line.setAttribute("y1",p.y-ny*15);line.setAttribute("x2",p.x+nx*15);line.setAttribute("y2",p.y+ny*15);line.setAttribute("class","startLine");svg.appendChild(line);
+ line.setAttribute("x1",p.x-nx*15);line.setAttribute("y1",p.y-ny*15);line.setAttribute("x2",p.x+nx*15);line.setAttribute("y2",p.y+ny*15);line.setAttribute("class","startLine");gruppo.appendChild(line);
  // Pit lane separata dalla centerline: ingresso, fast lane, box per team, uscita.
  const pg=pitGeometry();
  const route=pitRoutePoints(path,pg);
  const pitPath=document.createElementNS("http://www.w3.org/2000/svg","polyline");
- pitPath.setAttribute("points",route.map(p=>`${p.x},${p.y}`).join(" "));pitPath.setAttribute("class","pitLane");svg.appendChild(pitPath);
+ pitPath.setAttribute("points",route.map(p=>`${p.x},${p.y}`).join(" "));pitPath.setAttribute("class","pitLane");gruppo.appendChild(pitPath);
  const edgePts=route.map((p,i)=>{const q=route[Math.max(0,i-1)],r=route[Math.min(route.length-1,i+1)],dx=r.x-q.x,dy=r.y-q.y,mag=Math.hypot(dx,dy)||1,nx=-dy/mag,ny=dx/mag;return `${p.x+nx*5},${p.y+ny*5}`});
- const pitEdge=document.createElementNS("http://www.w3.org/2000/svg","polyline");pitEdge.setAttribute("points",edgePts.join(" "));pitEdge.setAttribute("class","pitLaneEdge");svg.appendChild(pitEdge);
+ const pitEdge=document.createElementNS("http://www.w3.org/2000/svg","polyline");pitEdge.setAttribute("points",edgePts.join(" "));pitEdge.setAttribute("class","pitLaneEdge");gruppo.appendChild(pitEdge);
  const ep=route[0],xp=route[route.length-1];
- [[ep,"PIT IN"],[xp,"PIT OUT"]].forEach(([pp,label])=>{const t=document.createElementNS("http://www.w3.org/2000/svg","text");t.setAttribute("x",pp.x+8);t.setAttribute("y",pp.y-7);t.setAttribute("class","pitLabel");t.textContent=label;svg.appendChild(t);});
+ [[ep,"PIT IN"],[xp,"PIT OUT"]].forEach(([pp,label])=>{const t=document.createElementNS("http://www.w3.org/2000/svg","text");t.setAttribute("x",pp.x+8);t.setAttribute("y",pp.y-7);t.setAttribute("class","pitLabel");t.textContent=label;gruppo.appendChild(t);});
  Object.keys(teams).forEach(teamId=>{
    const sp=pitStallPoint(path,pg,teamId),nx=sp.nx,ny=sp.ny;
-   const line=document.createElementNS("http://www.w3.org/2000/svg","line");line.setAttribute("x1",sp.x-nx*10);line.setAttribute("y1",sp.y-ny*10);line.setAttribute("x2",sp.x+nx*10);line.setAttribute("y2",sp.y+ny*10);line.setAttribute("class","pitStall");svg.appendChild(line);
-   const label=document.createElementNS("http://www.w3.org/2000/svg","text");label.setAttribute("x",sp.x+8);label.setAttribute("y",sp.y-7);label.setAttribute("class","pitStallLabel");label.textContent=teams[teamId].name.slice(0,3).toUpperCase();svg.appendChild(label);
+   const line=document.createElementNS("http://www.w3.org/2000/svg","line");line.setAttribute("x1",sp.x-nx*10);line.setAttribute("y1",sp.y-ny*10);line.setAttribute("x2",sp.x+nx*10);line.setAttribute("y2",sp.y+ny*10);line.setAttribute("class","pitStall");gruppo.appendChild(line);
+   const label=document.createElementNS("http://www.w3.org/2000/svg","text");label.setAttribute("x",sp.x+8);label.setAttribute("y",sp.y-7);label.setAttribute("class","pitStallLabel");label.textContent=teams[teamId].name.slice(0,3).toUpperCase();gruppo.appendChild(label);
  });
  drivers.forEach(d=>{
    const dot=document.createElement("div");dot.className="car";dot.id="car-"+d.id;dot.title=d.name;
@@ -2368,9 +2397,7 @@ function setupTrack(){
  // La tela e' 900x520, ma un tracciato vero ne occupa poco piu' della meta':
  // Shanghai stava in un rettangolo di circa 600x350 e veniva disegnato piccolo
  // in mezzo a due bande vuote. Adesso l'inquadratura si stringe sul disegno.
- calcolaVistaIntera();
- if(!camVicina)aggiornaCamera();
- adattaAltezzaPista();
+ inquadraPista();
 }
 // Si misura il tracciato piu' la pit lane, non le scritte: le etichette
 // sporgono in fuori e ogni nome lungo avrebbe rimpicciolito il circuito.
@@ -2391,6 +2418,40 @@ function calcolaVistaIntera(){
 // L'altezza del riquadro segue la forma del circuito. Tenerla fissa significa
 // che su un tracciato largo e basso meta' del riquadro resta nero, e quel nero
 // e' spazio rubato al disegno.
+// ROTAZIONE (v0.67.0) - Un telefono in verticale e' alto e stretto; quasi tutti
+// i circuiti sono larghi e bassi. Disegnandoli dritti il limite e' la larghezza
+// e meta' dell'altezza disponibile resta nera. Girando il disegno di 90 gradi il
+// limite diventa l'altezza, che ne abbiamo da vendere: a Shanghai si passa da
+// 0,57 a 0,69 di scala, e in piu' avanzano cento pixel di larghezza dove la
+// colonna dei dati sta comoda senza che nessuno ci passi sopra.
+// Su schermo largo non scatta: li' girare il circuito lo rimpicciolirebbe.
+function inquadraPista(){
+ const g=$("trackRot"),wrap=$("trackWrap");
+ if(!g||!wrap)return;
+ g.removeAttribute("transform");
+ g.querySelectorAll("text").forEach(t=>t.removeAttribute("transform"));
+ calcolaVistaIntera();
+ const p=vbIntera.split(" ").map(Number);
+ const w=p[2],h=p[3];
+ if(!(w>0&&h>0))return;
+ const cx=p[0]+w/2,cy=p[1]+h/2;
+ const L=wrap.clientWidth||900;
+ const Hmax=Math.max(260,Math.round((window.innerHeight||800)*.56));
+ const dritto=Math.min(L/w,Hmax/h), girato=Math.min(L/h,Hmax/w);
+ pistaRuotata=girato>dritto*1.05;
+ if(pistaRuotata){
+   g.setAttribute("transform",`rotate(-90 ${cx.toFixed(1)} ${cy.toFixed(1)})`);
+   // Le scritte vanno rigirate una per una, altrimenti i nomi delle curve si
+   // leggono di traverso: e in qualifica quei nomi sono i riferimenti.
+   g.querySelectorAll("text").forEach(t=>{
+     const x=t.getAttribute("x"),y=t.getAttribute("y");
+     if(x!=null&&y!=null)t.setAttribute("transform",`rotate(90 ${x} ${y})`);
+   });
+   vbIntera=`${(cx-h/2).toFixed(1)} ${(cy-w/2).toFixed(1)} ${h.toFixed(1)} ${w.toFixed(1)}`;
+ }
+ adattaAltezzaPista();
+ if(!camVicina)aggiornaCamera();
+}
 function adattaAltezzaPista(){
  const wrap=$("trackWrap");if(!wrap)return;
  const p=vbIntera.split(" ").map(Number);
@@ -2399,7 +2460,7 @@ function adattaAltezzaPista(){
  const tetto=Math.max(260,Math.round((window.innerHeight||800)*.56));
  wrap.style.height=Math.round(Math.min(Math.max(larg/asp,210),tetto))+"px";
 }
-addEventListener("resize",()=>{try{adattaAltezzaPista();render();}catch(e){}});
+addEventListener("resize",()=>{try{inquadraPista();render();}catch(e){}});
 
 
 // Colori di squadra: riconoscibili a colpo d'occhio senza usare livree o marchi.
@@ -2427,6 +2488,11 @@ function aggiornaScala(){
 }
 function aggiornaCamera(){
  const svg=$("trackSvg");
+ // Quando avanza larghezza, invece di centrare il disegno lo si spinge a
+ // destra: la fascia libera finisce tutta a sinistra, sotto la colonna dei dati.
+ const col=$("sideHud");
+ svg.setAttribute("preserveAspectRatio",
+   (col&&col.classList.contains("on"))?"xMaxYMid meet":"xMidYMid meet");
  if(!camVicina){svg.setAttribute("viewBox",vbIntera);$("trackPath").style.strokeWidth="";
    const e=$("trackEdge");if(e)e.style.strokeWidth="";return;}
  aggiornaScala();
@@ -2435,7 +2501,16 @@ function aggiornaCamera(){
  const r=$("trackWrap").getBoundingClientRect();
  const asp=(r.width>0&&r.height>0)?r.width/r.height:900/520;
  const larg=CAM_METRI/metriPerUnita(), h=larg/asp;
- svg.setAttribute("viewBox",`${(camX-larg/2).toFixed(1)} ${(camY-h/2).toFixed(1)} ${larg.toFixed(1)} ${h.toFixed(1)}`);
+ // camX/camY arrivano dalla path, cioe' dal disegno NON girato: se il gruppo e'
+ // ruotato vanno portati nello stesso sistema del viewBox, altrimenti da vicino
+ // si inquadra un pezzo di pista a caso.
+ let fx=camX,fy=camY;
+ if(pistaRuotata){
+   const p=vbIntera.split(" ").map(Number);
+   const cx=p[0]+p[2]/2,cy=p[1]+p[3]/2;
+   fx=cx+(camY-cy);fy=cy-(camX-cx);
+ }
+ svg.setAttribute("viewBox",`${(fx-larg/2).toFixed(1)} ${(fy-h/2).toFixed(1)} ${larg.toFixed(1)} ${h.toFixed(1)}`);
 }
 $("camBtn").onclick=()=>{
  camVicina=!camVicina;
@@ -2444,7 +2519,7 @@ $("camBtn").onclick=()=>{
  aggiornaCamera();render();
 };
 function renderTrack(){
- const svg=$("trackSvg"),path=$("trackPath"),len=path.getTotalLength(),wrapRect=$("trackWrap").getBoundingClientRect(),m=svg.getScreenCTM();
+ const svg=$("trackSvg"),path=$("trackPath"),len=path.getTotalLength(),wrapRect=$("trackWrap").getBoundingClientRect(),m=path.getScreenCTM();
  const o=order();          // serve a capire chi sta duellando con chi
  const place=(dot,p,pPrec)=>{
    if(!m)return;
@@ -3568,14 +3643,14 @@ function qDrawMarks(){
    const p=svgPointAtFrac(path,t.f);
    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
    c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r",13);
-   c.setAttribute("class","qMark");c.id="qmark-"+i;svg.appendChild(c);
+   c.setAttribute("class","qMark");c.id="qmark-"+i;($("trackRot")||svg).appendChild(c);
  });
  const dot=document.createElement("div");dot.className="qCar";dot.id="qualiCar";
  $("trackWrap").appendChild(dot);
 }
 function qPlaceCar(frac){
  const svg=$("trackSvg"),path=$("trackPath"),len=path.getTotalLength();
- const m=svg.getScreenCTM(),wrapRect=$("trackWrap").getBoundingClientRect(),dot=$("qualiCar");
+ const m=path.getScreenCTM(),wrapRect=$("trackWrap").getBoundingClientRect(),dot=$("qualiCar");
  if(!m||!dot)return;
  const p=path.getPointAtLength(len*layoutFrac(frac));
  const q=new DOMPoint(p.x,p.y).matrixTransform(m);
@@ -3771,7 +3846,13 @@ function hudVisibile(){
  const attiva=!casa&&!!(running||startPrepared||
    (weekend==="gara"&&!raceEnded&&cars&&cars.length));
  $("hud").classList.toggle("on",attiva);
- $("sideHud").classList.toggle("on",!!(running||startPrepared));
+ // Solo al cambio di stato: l'inquadratura si ricalcola, e farlo a ogni
+ // fotogramma sarebbe lavoro sprecato sessanta volte al secondo.
+ const dati=!!(running||startPrepared);
+ if($("sideHud").classList.contains("on")!==dati){
+   $("sideHud").classList.toggle("on",dati);
+   aggiornaCamera();      // sposta il disegno a destra, o lo ricentra
+ }
  document.body.classList.toggle("inGara",!!(running||startPrepared));
  $("hudSlotLaunch").style.display=startPrepared?"":"none";
  $("hudSlotLights").style.display=startPrepared?"flex":"none";
@@ -4421,7 +4502,7 @@ $("pitOsmAllBtn").onclick=async()=>{
 
 $("trackSvg").addEventListener("click",e=>{
  if(!pitEditing||running||startPrepared)return;
- const svg=$("trackSvg"),m=svg.getScreenCTM();if(!m)return;
+ const svg=$("trackSvg"),m=($("trackPath")||svg).getScreenCTM();if(!m)return;
  const q=new DOMPoint(e.clientX,e.clientY).matrixTransform(m.inverse());
  if(!pitPathUser[circuit.id])pitPathUser[circuit.id]=[];
  pitPathUser[circuit.id].push([Math.round(q.x*10)/10,Math.round(q.y*10)/10]);
