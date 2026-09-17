@@ -2,7 +2,10 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- maximum-scale + user-scalable: su un gioco a tempo lo zoom accidentale con
+     due dita sposta la pista mentre stai per cliccare in curva. Non e' una
+     pagina da leggere, e' un comando. -->
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0d0f12">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,7 +23,16 @@
    touch-action:manipulation lo elimina. */
 button,select,input,#trackSvg,#qHit,.qBar{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 button,.cell,.big,.small{-webkit-user-select:none;user-select:none}
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Arial,sans-serif}
+/* Se un solo elemento e' piu' largo dello schermo compaiono le barre di
+   scorrimento e il telefono lascia rimpicciolire tutta la pagina per farcela
+   stare: e' cosi' che il gioco finiva a francobollo. Le tabelle larghe
+   scorrono dentro il loro riquadro, la pagina no. */
+html,body{max-width:100%;overflow-x:hidden}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Arial,sans-serif;
+ overscroll-behavior-y:contain;touch-action:manipulation}
+#trackWrap{touch-action:none}
+.tabellaScroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.wrap{max-width:1180px}
 .wrap{max-width:1180px;margin:auto;padding:18px}
 /* v0.63: la plancia non e' piu' fissa in fondo allo schermo, sta attaccata
    alla pista dentro il suo pannello: niente spazio da riservare in coda. */
@@ -35,7 +47,9 @@ button.active{outline:2px solid white;background:#303640}
 @media(max-width:720px){
  .wrap{padding:12px}
  h1{font-size:20px}
- #trackWrap{height:320px}
+ #trackWrap{height:clamp(200px,40vh,340px)}
+ /* si leggono una volta nella vita e poi rubano mezzo schermo per sempre */
+ #circuitNote,#layoutNote,#raceHeader{display:none}
  /* con nove colonne la classifica su telefono diventa illeggibile:
     restano posizione, pilota, gap, usura e soste */
  #standings tr>*:nth-child(4),#standings tr>*:nth-child(6),
@@ -45,11 +59,14 @@ button.active{outline:2px solid white;background:#303640}
  .homeCard{padding:18px}
  .homeCard .row{flex-wrap:wrap}.homeCard .row label{flex:1 0 100%}
 }
-#trackWrap{position:relative;height:440px;background:#101318;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+/* Altezza in quote di schermo, non in pixel fissi: 440 px su un telefono
+   basso lasciavano fuori i comandi e costringevano a scorrere proprio mentre
+   serviva cliccare. */
+#trackWrap{position:relative;height:clamp(240px,46vh,440px);background:#101318;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
 #trackSvg{position:absolute;inset:0;width:100%;height:100%}
 .trackBase{fill:none;stroke:#363c45;stroke-width:24;stroke-linecap:round;stroke-linejoin:round}
 .trackEdge{fill:none;stroke:#5b636e;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.zone{fill:#f2f4f8;opacity:.85}.zoneLabel{font-size:11px;fill:#cfd4da}.landmark{fill:#9ba3ad;opacity:.9}.landmarkLabel{font-size:10px;fill:#9ba3ad}.startLine{stroke:#fff;stroke-width:5}.pitMark{fill:#f4c542}.pitLabel{font-size:10px;fill:#f4c542;font-weight:800}.pitLane{fill:none;stroke:#6f7782;stroke-width:9;opacity:.65}.pitLaneEdge{fill:none;stroke:#c7ccd3;stroke-width:1.5;stroke-dasharray:4 4;opacity:.7}.pitStall{stroke:#f4c542;stroke-width:2;opacity:.85}.pitStallLabel{font-size:8px;fill:#f4c542;font-weight:800}.car.pitCar{transform:scale(1.12);z-index:8}.layoutBadge{position:absolute;left:12px;top:12px;z-index:4;background:#0d0f12cc;border:1px solid #343a43;border-radius:8px;padding:5px 8px;font-size:11px;color:#cfd4da}
+.zone{fill:#f2f4f8;opacity:.85}.zoneLabel{font-size:11px;fill:#cfd4da}.landmark{fill:#9ba3ad;opacity:.9}.landmarkLabel{font-size:10px;fill:#9ba3ad}.startLine{stroke:#fff;stroke-width:5}.pitMark{fill:#f4c542}.pitLabel{font-size:10px;fill:#f4c542;font-weight:800}.pitLane{fill:none;stroke:#6f7782;stroke-width:9;opacity:.65}.pitLaneEdge{fill:none;stroke:#c7ccd3;stroke-width:1.5;stroke-dasharray:4 4;opacity:.7}.pitStall{stroke:#f4c542;stroke-width:2;opacity:.85}.pitStallLabel{font-size:8px;fill:#f4c542;font-weight:800}.car.pitCar{transform:scale(1.12);z-index:8}.layoutBadge{display:none}
 /* Le vetture non sono piu' puntini: sagome viste dall'alto nei colori squadra.
    La rotazione segue la direzione di marcia, calcolata dal tracciato. */
 /* Puntini nei colori squadra. La sagoma della vettura e' stata tolta: a vista
@@ -82,8 +99,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 @media(display-mode:standalone),(display-mode:fullscreen){
  .wrap{padding-top:calc(8px + env(safe-area-inset-top));
    padding-bottom:calc(12px + env(safe-area-inset-bottom))}
- #gameTitle,#circuitSub{display:none}
- #trackWrap{height:min(62vh,440px)}
+ #gameTitle,#circuitSub,#circuitNote,#layoutNote{display:none}
 }
 #installBtn b{color:#ffd24a}
 #aggiorna{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));
@@ -98,7 +114,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.64.0</h1>
+<h1 id="gameTitle">F1 Career v0.65.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel">
@@ -190,17 +206,31 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
  padding:18px;font-size:19px;text-align:center}
 #careerSecondari{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 #careerSecondari button{font-size:12px;padding:8px 11px}
-#quali{position:fixed;left:0;right:0;bottom:0;z-index:45;display:none;background:#111520;
- border-top:1px solid #2a3040;padding:12px 18px;box-shadow:0 -8px 24px rgba(0,0,0,.5)}
+/* QUALIFICA (v0.65.0) - Era una barra fissa in fondo allo SCHERMO. Su telefono
+   il testo dei riferimenti la faceva crescere in altezza finche' il pulsante da
+   premere non finiva fuori, e per trovarlo bisognava scorrere: in un minigioco
+   da venti secondi vuol dire aver gia' perso il giro. Ora sta attaccata sotto
+   la pista, e il pulsante e' il primo elemento, sempre della stessa altezza.
+   Il testo, che si legge fra un riferimento e l'altro, sta sotto. */
+#quali{display:none;margin-top:10px;background:#111520;border:1px solid #2a3040;
+ border-radius:12px;padding:12px}
 #quali.on{display:block}
+#quali .qWrap{display:flex;flex-direction:column;gap:10px;align-items:stretch;max-width:none}
+#qHit{order:-1;flex:none;width:100%;min-height:86px;padding:10px;font-size:23px;
+ background:#8a6b12;border-color:#ffd24a;color:#fff}
+#qHit:disabled{background:#22262c;border-color:#3a414a;color:#fff}
+#quali #qLog{max-height:88px;overflow:auto}
+#quali #qSkip{width:auto;align-self:flex-start;padding:7px 11px;font-size:12px}
+#qSub{font-size:14px}
 /* A giro chiuso la barra in fondo diventa una scheda al centro dello schermo:
    il risultato e' un momento, non un comando, e il passo successivo dev'essere
    una cosa sola, grande, in mezzo. Prima il pulsante stava in coda a una riga
    di altri tre e si faticava a trovarlo. */
-#quali.fine{top:0;background:rgba(8,10,14,.94);border-top:none;box-shadow:none;
- display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
-#quali.fine .qWrap{flex-direction:column;align-items:stretch;max-width:560px;
- background:#141821;border:1px solid #2a3040;border-radius:14px;padding:26px}
+#quali.fine{position:fixed;inset:0;z-index:45;background:rgba(8,10,14,.94);border:none;
+ margin:0;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+#quali.fine .qWrap{max-width:560px;background:#141821;border:1px solid #2a3040;
+ border-radius:14px;padding:26px}
+#quali.fine #qLog{max-height:none}
 #quali.fine #qHit,#quali.fine #qSkip{display:none}
 #qClose{width:100%;max-width:520px;margin:16px auto 0;padding:22px;
  font-size:21px;text-align:center}
@@ -208,6 +238,26 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 #qCount{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
  font-size:120px;font-weight:900;color:#ffd24a;text-shadow:0 0 30px rgba(0,0,0,.8);pointer-events:none}
 #qCount.on{display:flex}
+/* INTESTAZIONE DELLA PISTA (v0.65.0) - Il nome del circuito stava in un
+   sottotitolo grigio da 12 px e i giri da percorrere non erano scritti da
+   nessuna parte: due dei tre dati che servono prima di partire. Ora stanno
+   sopra la pista, grandi, e la fase del weekend ha un colore suo. */
+#pistaHeader{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+#phNome{font-size:23px;font-weight:900;letter-spacing:-.01em;line-height:1.1}
+#phMeta{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.pill{font-size:11px;font-weight:800;letter-spacing:.06em;padding:5px 9px;
+ border-radius:999px;border:1px solid;white-space:nowrap}
+.pill.giri{color:#ffd24a;border-color:#6b5716;background:#2a2310}
+.pill.naz{color:#9ba3ad;border-color:#343a43;background:#171a1f}
+.pill.fase{color:#8b93a7;border-color:#343a43;background:#171a1f}
+.pill.fase.qualifica{color:#ffd24a;border-color:#6b5716;background:#2a2310}
+.pill.fase.gara{color:#5ad17a;border-color:#255f38;background:#122317}
+.pill.fase.fine{color:#9ba3ad;border-color:#343a43;background:#171a1f}
+@media(max-width:720px){
+ #phNome{font-size:19px}
+ #phMeta{margin-left:0;width:100%}
+}
+
 /* PLANCIA DI GARA (v0.63) - Prima era una barra fissa in fondo allo SCHERMO.
    Su telefono la pista sta in alto e alta 320 px: i pulsanti finivano a mezzo
    schermo di distanza da cio' che stai guardando, e i numeri (posizione, giro,
@@ -238,9 +288,15 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
  border-radius:12px;padding:12px}
 #hud.on{display:block}
 #hud .row{display:flex;gap:10px;align-items:stretch;justify-content:center;flex-wrap:wrap}
-#hud #ctaRow{display:flex;justify-content:center}
-#hud #prepare{width:100%;max-width:520px;min-height:62px;font-size:19px;
- text-align:center;margin:0 0 10px}
+/* L'AZIONE PRINCIPALE (v0.65.0) - In ogni fase del weekend ce n'e' una sola e
+   sta sempre nello stesso punto, subito sotto la pista: avvia la qualifica,
+   poi prepara la partenza. Prima AVVIA QUALIFICA stava nella barra in alto e
+   PREPARA PARTENZA sotto: due comandi consecutivi in due posti diversi. */
+#ctaRow{display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
+#ctaRow button{display:block;width:100%;max-width:520px;min-height:62px;
+ font-size:19px;text-align:center;margin:10px 0 0}
+#ctaRow #qualiBtn{background:#8a6b12;border-color:#ffd24a;color:#fff}
+#ctaRow #qualiBtn.pronta{outline:none;color:#fff}
 #hud button{font-size:15px;font-weight:800;letter-spacing:.03em}
 #hud #boost{flex:0 0 170px;min-height:76px;font-size:21px}
 #hud #boost.on{background:#1f7a3f;border-color:#2ea55a;color:#fff}
@@ -317,8 +373,8 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
     </div>
   </div>
 </div>
+<div id="ctaRow"></div>
 <div id="hud">
-  <div id="ctaRow"></div>
   <div class="row">
     <div class="info">
       <div class="cell"><span>POS</span><b id="hPos">-</b></div>
@@ -415,6 +471,14 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 <div class="grid">
   <div>
     <div class="panel" id="trackPanel">
+      <div id="pistaHeader">
+        <div id="phNome">-</div>
+        <div id="phMeta">
+          <span class="pill giri" id="phGiri">-</span>
+          <span class="pill naz" id="phNaz">-</span>
+          <span class="pill fase" id="phFase">-</span>
+        </div>
+      </div>
       <div id="trackWrap">
         <div id="layoutBadge" class="layoutBadge">Layout: Melbourne</div>
         <div id="safetyCarDot" class="safetyCar">SC</div>
@@ -505,7 +569,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 
     </div>
 
-    <div class="panel">
+    <div class="panel tabellaScroll">
       <table>
         <thead><tr><th>#</th><th>Pilota</th><th>Gap</th><th>Gomma</th><th>Usura</th><th>Energia</th><th>PU rec.</th><th>Boost</th><th>Pit</th></tr></thead>
         <tbody id="standings"></tbody>
@@ -1037,7 +1101,8 @@ function applyCircuit(id){
  circuit.tyreStress=d.tyreStress??1;
  circuit.zones=currentLayout().zones;
  RACE_LAPS_LOCKED=circuit.laps;
- if($("gameTitle"))$("gameTitle").textContent=`F1 Multi-Circuit Test v0.16 · ${circuit.name}`;
+ if(typeof pistaHeaderRefresh==="function")pistaHeaderRefresh();
+ if($("gameTitle"))$("gameTitle").textContent=`F1 Career · ${circuit.name}`;
  if($("circuitSub"))$("circuitSub").textContent=
    `${circuit.nation} · ${circuit.lengthKm.toFixed(3)} km · base gara ${fmtTime(circuit.baseLap)} · Layout Circuiti Precisi`;
 }
@@ -3617,11 +3682,31 @@ function scaricaSalvataggio(){
  assistRefresh();
  $("hudSlotPit").appendChild($("pit"));
  $("hudSlotPit").appendChild($("pitTyre"));
+ // Ordine sotto la pista: azione principale, pannello qualifica, plancia di
+ // gara. In ogni fase se ne accende uno solo, ma il posto non cambia mai.
+ $("ctaRow").appendChild($("qualiBtn"));
+ $("trackPanel").insertBefore($("ctaRow"),$("hud"));
+ $("trackPanel").insertBefore($("quali"),$("hud"));
  // comandi di contorno: servono in gara ma non si premono al volo
  $("hudSlotSec").appendChild($("pause"));
  $("hudSlotSec").appendChild($("camBtn"));
  const labVel=$("speed").closest("label");if(labVel)$("hudSlotSec").appendChild(labVel);
 })();
+// Nome del circuito, giri da percorrere e fase: i tre dati che servono prima
+// di premere qualsiasi cosa. Aggiornati da applyCircuit e da setWeekend.
+function pistaHeaderRefresh(){
+ if(!$("phNome"))return;
+ $("phNome").textContent=circuit.name||"-";
+ const g=circuit.laps||RACE_LAPS_LOCKED||0;
+ $("phGiri").textContent=g===1?"1 GIRO":`${g} GIRI`;
+ $("phNaz").textContent=(circuit.nation||"").toUpperCase();
+ const f=$("phFase");
+ f.className="pill fase "+(weekend||"");
+ f.textContent=raceEnded?"GARA CONCLUSA"
+   :weekend==="qualifica"?"QUALIFICA"
+   :weekend==="gara"?(running?"IN GARA":"GRIGLIA")
+   :"LIBERA";
+}
 function hudVisibile(){
  // La barra comandi compare gia' in fase gara, prima del via: e' li' che sta
  // PREPARA PARTENZA, e cercarlo nella barra in alto era il passaggio che
@@ -3647,6 +3732,7 @@ function hudRefresh(){
  $("hEnBar").style.width=clamp(pc.energy,0,100)+"%";
  $("hGap").textContent=i>0?gapLabel(o,i):"leader";
  $("boost").classList.toggle("on",!!pc.boostOn);
+ pistaHeaderRefresh();
 }
 // scorciatoie: B per il boost, P per il pit
 document.addEventListener("keydown",e=>{
@@ -3666,6 +3752,7 @@ $("qClose").onclick=()=>{
  setWeekend("gara");weekendSalva("gara");
 };
 $("qClose").textContent="VAI ALLA GARA";
+pistaHeaderRefresh();
 
 // ---- FASI DEL WEEKEND ----
 // Prima la qualifica, poi la gara. Tenere attivi tutti i comandi fin dall'inizio
@@ -3697,6 +3784,7 @@ function setWeekend(fase){
    :fase==="gara"?"Premi “Prepara partenza”.":"Gara conclusa.";
  const p=$("careerPanel");if(p)p.style.display=(fase==="fine"||!weekendAttivo)?"":"none";
  if(typeof hudVisibile==="function")hudVisibile();
+ if(typeof pistaHeaderRefresh==="function")pistaHeaderRefresh();
 }
 $("trackSvg").addEventListener("click",()=>{if(qRunning)qColpo();});
 document.addEventListener("keydown",e=>{
