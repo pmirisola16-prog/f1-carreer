@@ -42,14 +42,29 @@ h1{margin:0 0 2px;font-size:26px}.sub{margin:0;color:var(--muted)}
 button,select{border:1px solid #3a414a;background:#22262c;color:white;padding:10px 12px;border-radius:9px;font-weight:700}
 button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
 button.active{outline:2px solid white;background:#303640}
-.grid{display:grid;grid-template-columns:1.5fr .75fr;gap:14px}
+/* min-width:0 - Senza questa riga una cella di griglia si allarga fino al
+   contenuto piu' largo che contiene: bastava la tabella della classifica, che
+   non va a capo, per far crescere l'intera colonna oltre lo schermo. Da li'
+   venivano le barre di scorrimento e, bloccato lo zoom, il taglio a destra. */
+.grid{display:grid;grid-template-columns:1.5fr .75fr;gap:14px;min-width:0}
+.grid>*{min-width:0}
+.panel{min-width:0}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
 @media(max-width:720px){
- .wrap{padding:12px}
+ /* ogni pixel di padding e' larghezza tolta al circuito, che e' l'unica cosa
+    che si guarda davvero */
+ .wrap{padding:10px}
+ .panel{padding:10px;border-radius:12px}
  h1{font-size:20px}
- #trackWrap{height:clamp(200px,40vh,340px)}
  /* si leggono una volta nella vita e poi rubano mezzo schermo per sempre */
  #circuitNote,#layoutNote,#raceHeader{display:none}
+ /* su un tracciato alto tre centimetri le scritte sono rumore, non dati:
+    restano i nomi delle curve, che servono come riferimenti in qualifica */
+ .zoneLabel,.pitStallLabel{display:none}
+ .landmarkLabel{font-size:9px}
+ th,td{padding:5px 4px;font-size:12px}
+ .energybar,.tyrebar{width:44px}
+ #events{height:240px}
  /* con nove colonne la classifica su telefono diventa illeggibile:
     restano posizione, pilota, gap, usura e soste */
  #standings tr>*:nth-child(4),#standings tr>*:nth-child(6),
@@ -114,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.65.0</h1>
+<h1 id="gameTitle">F1 Career v0.66.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel">
@@ -315,7 +330,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
  #hud #boost,#hud #launch{flex:1 1 44%;min-height:70px;font-size:19px}
  #hud #pit{flex:1 1 44%;min-height:70px}
  #hud .pitCol{flex:1 1 44%}
- #sideHud{width:86px;top:42px;left:8px}
+ #sideHud{width:78px;top:40px;left:6px}
  #sideHud .cell b{font-size:17px}
  #sideHud .cell{padding:4px 6px}
 }
@@ -1224,6 +1239,9 @@ let startLaunchLastLeaderSeg=-1;
 // rispetto al blocco che contiene i suoi comandi, e una lettura anticipata di una
 // variabile "let" non vale zero - interrompe l'esecuzione dell'intero script.
 let camVicina=false, camX=450, camY=260;
+// Inquadratura a vista intera. Non e' piu' la tela fissa 900x520: viene
+// ricalcolata sul disegno vero a ogni cambio di circuito (vedi setupTrack).
+let vbIntera="0 0 900 520";
 // Assistenza al boost: dichiarata qui perche' viene letta dentro update(),
 // molto prima nel file rispetto ai comandi che la modificano.
 const ASSIST_STORE="f1AssistBoost_v041";
@@ -2347,7 +2365,41 @@ function setupTrack(){
    dot.style.background=coloreSquadra(d.team);
    wrap.appendChild(dot);
  });
+ // La tela e' 900x520, ma un tracciato vero ne occupa poco piu' della meta':
+ // Shanghai stava in un rettangolo di circa 600x350 e veniva disegnato piccolo
+ // in mezzo a due bande vuote. Adesso l'inquadratura si stringe sul disegno.
+ calcolaVistaIntera();
+ if(!camVicina)aggiornaCamera();
+ adattaAltezzaPista();
 }
+// Si misura il tracciato piu' la pit lane, non le scritte: le etichette
+// sporgono in fuori e ogni nome lungo avrebbe rimpicciolito il circuito.
+function calcolaVistaIntera(){
+ try{
+   const b=$("trackPath").getBBox();
+   let x0=b.x,y0=b.y,x1=b.x+b.width,y1=b.y+b.height;
+   const pl=$("trackSvg").querySelector(".pitLane");
+   if(pl){const q=pl.getBBox();
+     if(q.width>0){x0=Math.min(x0,q.x);y0=Math.min(y0,q.y);
+       x1=Math.max(x1,q.x+q.width);y1=Math.max(y1,q.y+q.height);}}
+   const w=x1-x0,h=y1-y0;
+   if(!(w>0&&h>0))return;
+   const m=Math.max(w,h)*.035;         // un filo d'aria attorno, non un cortile
+   vbIntera=`${(x0-m).toFixed(1)} ${(y0-m).toFixed(1)} ${(w+m*2).toFixed(1)} ${(h+m*2).toFixed(1)}`;
+ }catch(e){/* niente getBBox: resta la tela intera */}
+}
+// L'altezza del riquadro segue la forma del circuito. Tenerla fissa significa
+// che su un tracciato largo e basso meta' del riquadro resta nero, e quel nero
+// e' spazio rubato al disegno.
+function adattaAltezzaPista(){
+ const wrap=$("trackWrap");if(!wrap)return;
+ const p=vbIntera.split(" ").map(Number);
+ const asp=(p[2]>0&&p[3]>0)?p[2]/p[3]:900/520;
+ const larg=wrap.clientWidth||900;
+ const tetto=Math.max(260,Math.round((window.innerHeight||800)*.56));
+ wrap.style.height=Math.round(Math.min(Math.max(larg/asp,210),tetto))+"px";
+}
+addEventListener("resize",()=>{try{adattaAltezzaPista();render();}catch(e){}});
 
 
 // Colori di squadra: riconoscibili a colpo d'occhio senza usare livree o marchi.
@@ -2375,10 +2427,14 @@ function aggiornaScala(){
 }
 function aggiornaCamera(){
  const svg=$("trackSvg");
- if(!camVicina){svg.setAttribute("viewBox","0 0 900 520");$("trackPath").style.strokeWidth="";
+ if(!camVicina){svg.setAttribute("viewBox",vbIntera);$("trackPath").style.strokeWidth="";
    const e=$("trackEdge");if(e)e.style.strokeWidth="";return;}
  aggiornaScala();
- const larg=CAM_METRI/metriPerUnita(), h=larg*520/900;
+ // L'altezza dell'inquadratura segue le proporzioni del riquadro, non piu'
+ // quelle della vecchia tela: altrimenti da vicino si vedevano due bande nere.
+ const r=$("trackWrap").getBoundingClientRect();
+ const asp=(r.width>0&&r.height>0)?r.width/r.height:900/520;
+ const larg=CAM_METRI/metriPerUnita(), h=larg/asp;
  svg.setAttribute("viewBox",`${(camX-larg/2).toFixed(1)} ${(camY-h/2).toFixed(1)} ${larg.toFixed(1)} ${h.toFixed(1)}`);
 }
 $("camBtn").onclick=()=>{
