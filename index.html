@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.69.0</h1>
+<h1 id="gameTitle">F1 Career v0.70.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -270,10 +270,26 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 #qCount{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
  font-size:120px;font-weight:900;color:#ffd24a;text-shadow:0 0 30px rgba(0,0,0,.8);pointer-events:none}
 #qCount.on{display:flex}
+#tabellone{position:fixed;inset:0;z-index:47;display:none;background:rgba(8,10,14,.96);
+ padding:12px;overflow:auto;flex-direction:column}
+body.tabellone #tabellone{display:flex}
+#tabelloneCorpo{flex:1;overflow:auto;min-height:0}
+#tabelloneCorpo .panel{margin-bottom:12px}
+#tabelloneChiudi{width:100%;max-width:520px;margin:0 auto 12px;padding:16px;
+ font-size:17px;text-align:center;flex:0 0 auto}
+#pistaHeader #tabelloneApri{order:1;padding:7px 11px;font-size:11px;flex:0 0 auto}
+body.tabellone #trackWrap,body.tabellone #hud,body.tabellone #quali{visibility:hidden}
+
 /* Durante il weekend in carriera il pannello in alto non contiene piu' niente
    che serva: MENU, gomma di partenza e messaggio sono passati accanto alla
    pista. Su telefono quei cento pixel valgono piu' di un riquadro vuoto. */
 body.carriera #topPanel{display:none}
+@media(max-width:720px){
+ /* fuori dalla tendina non occupano spazio: la pista e i comandi devono stare
+    in una schermata sola, senza scorrere */
+ body.carriera #classificaPanel,body.carriera #eventiPanel{display:none}
+ body.carriera.tabellone #classificaPanel,body.carriera.tabellone #eventiPanel{display:block}
+}
 #pistaHeader #homeBtn{margin-left:auto;order:1;padding:7px 11px;font-size:11px;flex:0 0 auto}
 #pistaHeader #phMeta{order:2}
 #pistaHeader #reaction{order:3;width:100%;margin-top:2px}
@@ -419,6 +435,11 @@ body.carriera #topPanel{display:none}
     </div>
   </div>
 </div>
+<!-- Classifica ed eventi non stanno piu' sotto la pista durante il weekend.
+     Su telefono spingevano fuori schermo meta' gioco, e in gara non si
+     consultano: si guarda la pista. Restano a un dito di distanza, dentro una
+     tendina che si apre sopra la pista e si chiude quando hai visto. -->
+<div id="tabellone"><div id="tabelloneCorpo"></div></div>
 <div id="ctaRow"></div>
 <div id="hud">
   <div class="row">
@@ -617,7 +638,7 @@ body.carriera #topPanel{display:none}
 
     </div>
 
-    <div class="panel tabellaScroll">
+    <div class="panel tabellaScroll" id="classificaPanel">
       <table>
         <thead><tr><th>#</th><th>Pilota</th><th>Gap</th><th>Gomma</th><th>Usura</th><th>Energia</th><th>PU rec.</th><th>Boost</th><th>Pit</th></tr></thead>
         <tbody id="standings"></tbody>
@@ -625,7 +646,7 @@ body.carriera #topPanel{display:none}
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="eventiPanel">
     <div class="big">Eventi gara</div>
     <div id="events"></div>
   </div>
@@ -2735,6 +2756,7 @@ function prepare(){
  if(running)return;
  aiSimulationMode=false;
  circuit.laps=RACE_LAPS_LOCKED;createCars();raceEnded=false;pitBoxes={};raceClock=0;playerPitRequested=false;startLaunchLastLeaderSeg=-1;$("pit").classList.remove("active");$("restartBtn").disabled=true;$("events").textContent="";resetSafetyCar();render();resetLights();
+ if(typeof tabelloneApri==="function")tabelloneApri(false);
  startPrepared=true;lightsOutAt=null;pressedAt=null;
  $("prepare").disabled=true;$("player").disabled=true;$("startTyre").disabled=true;$("circuitSelect").disabled=true;$("launch").disabled=false;
  // render() qui sopra gira PRIMA che startPrepared diventi true, e finche' la
@@ -3727,6 +3749,7 @@ function qualiOpen(){
  // Il pulsante che ha aperto la qualifica ora e' spento e ruba la riga che
  // serve a CLICCA IN CURVA: durante il giro sparisce.
  $("ctaRow").style.display="none";
+ tabelloneApri(false);   // non si comincia un giro secco con una tabella davanti
  // Prima si fissa l'altezza del riquadro, poi si disegnano i cerchi: il loro
  // raggio dipende da quanto e' grande la pista sullo schermo, e misurarlo
  // prima avrebbe dato il numero sbagliato.
@@ -3874,6 +3897,16 @@ function scaricaSalvataggio(){
  // partenza scende fra i comandi. Cosi' il pannello in alto resta vuoto e su
  // telefono si puo' togliere di mezzo del tutto.
  $("pistaHeader").appendChild($("homeBtn"));
+ // Il pulsante nasce qui e non nel markup: se la tendina non servisse, non
+ // esisterebbe. Sta accanto a MENU perche' e' una consultazione, non un comando.
+ const apri=document.createElement("button");
+ apri.id="tabelloneApri";apri.textContent="CLASSIFICA";
+ apri.onclick=()=>tabelloneApri(true);
+ $("pistaHeader").insertBefore(apri,$("homeBtn"));
+ const chiudi=document.createElement("button");
+ chiudi.id="tabelloneChiudi";chiudi.className="primario";chiudi.textContent="CHIUDI E TORNA IN PISTA";
+ chiudi.onclick=()=>tabelloneApri(false);
+ $("tabellone").insertBefore(chiudi,$("tabelloneCorpo"));
  $("pistaHeader").appendChild($("reaction"));
  const labGomma=$("startTyre").closest("label");
  if(labGomma)$("hudSlotSec").appendChild(labGomma);
@@ -3901,6 +3934,24 @@ function pistaHeaderRefresh(){
    :weekend==="qualifica"?"QUALIFICA"
    :weekend==="gara"?(running?"IN GARA":"GRIGLIA")
    :"LIBERA";
+}
+// I pannelli non vengono copiati ma spostati e rimessi dove stavano: cosi' la
+// classifica che si legge nella tendina e' la stessa che si aggiorna da sola,
+// senza una seconda tabella da tenere allineata.
+let tabelloneCase=null;
+function tabelloneApri(apri){
+ const corpo=$("tabelloneCorpo");if(!corpo)return;
+ const pannelli=[$("classificaPanel"),$("eventiPanel")].filter(Boolean);
+ if(apri){
+   if(!tabelloneCase)tabelloneCase=pannelli.map(p=>[p,p.parentElement,p.nextElementSibling]);
+   pannelli.forEach(p=>corpo.appendChild(p));
+   document.body.classList.add("tabellone");
+ }else{
+   document.body.classList.remove("tabellone");
+   if(tabelloneCase)tabelloneCase.forEach(([p,padre,dopo])=>{
+     if(padre)padre.insertBefore(p,dopo&&dopo.parentElement===padre?dopo:null);
+   });
+ }
 }
 function hudVisibile(){
  // La barra comandi compare gia' in fase gara, prima del via: e' li' che sta
@@ -3989,6 +4040,10 @@ function setWeekend(fase){
    :fase==="gara"?"Premi “Prepara partenza”.":"Gara conclusa.";
  const p=$("careerPanel");if(p)p.style.display=(fase==="fine"||!weekendAttivo)?"":"none";
  document.body.classList.toggle("carriera",car&&weekendAttivo);
+ // Cambiando fase la pagina resta dov'era: se eri sceso a leggere la
+ // classifica ti ritrovavi la pista tagliata a meta'. Si riparte dall'alto.
+ if(car&&weekendAttivo)try{window.scrollTo(0,0)}catch(e){}
+ if(typeof tabelloneApri==="function")tabelloneApri(false);
  if(typeof hudVisibile==="function")hudVisibile();
  if(typeof pistaHeaderRefresh==="function")pistaHeaderRefresh();
 }
