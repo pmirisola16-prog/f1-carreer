@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.73.0</h1>
+<h1 id="gameTitle">F1 Career v0.74.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -350,6 +350,10 @@ body.carriera #topPanel{display:none}
    ferma. Gli elementi sono sempre gli stessi, solo spostati: nessuna copia. */
 #primario,.primario{background:#1d5fd8;border-color:#4b82ee;color:#fff}
 .primario:hover:not(:disabled){background:#2a6ce6}
+/* Verde per i pulsanti che mandano in pista: il colore della bandiera che
+   fa ripartire una gara, e nessun dubbio su cosa si deve premere. */
+.vai{background:#1f7a3f;border-color:#35b365;color:#fff}
+.vai:hover:not(:disabled){background:#268a49}
 
 /* colonna dati: lato sinistro della pista */
 /* In gara la colonna dei dati non copre piu' il disegno: l'inquadratura si
@@ -439,7 +443,7 @@ body.carriera #topPanel{display:none}
       <button id="homeNew"><b>NUOVA CARRIERA</b><br><span class="small">Crea il tuo pilota. Le gare seguono il calendario.</span></button>
       <button id="homeContinue"><b>CONTINUA CARRIERA</b><br><span class="small" id="homeContinueInfo">Nessuna carriera salvata.</span></button>
       <button id="homeFree"><b>GARA LIBERA</b><br><span class="small">Scegli circuito, giri e pilota.</span></button>
-      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.73.0</div>
+      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.74.0</div>
       <button id="installBtn" style="display:none"><b>INSTALLA SUL TELEFONO</b><br><span class="small">Icona sulla schermata iniziale, schermo intero, funziona senza rete.</span></button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="backupBtn" style="flex:1;width:auto;margin:0;padding:10px;font-size:12px;text-align:center">SALVA UNA COPIA</button>
@@ -563,7 +567,7 @@ body.carriera #topPanel{display:none}
     </div>
     <button id="qHit" disabled>CLICCA IN CURVA</button>
     <div style="flex:0 0 auto">
-      <button id="qClose" class="primario" style="display:none">VAI ALLA GARA</button>
+      <button id="qClose" class="vai" style="display:none">VAI ALLA GARA</button>
       <button id="qSkip">Salta qualifica</button>
     </div>
   </div>
@@ -1346,6 +1350,10 @@ let raceClock=0, pitBoxes={};
 // Safety Car v0.9
 const SAFETY_CAR_CHANCE=.25;          // più NO che SI
 const SAFETY_CAR_LAP_FACTOR=2.2;      // es. 20s normale -> 44s sotto SC
+// Distanza minima fra due vetture in fila dietro la Safety Car. Non e' un
+// dettaglio estetico: e' cio' che impedisce il sorpasso in regime di
+// neutralizzazione (vedi scIncolonna).
+const SC_MIN_GAP_KM=0.030;
 const SAFETY_CAR_DURATION_LAPS=1;     // un giro del leader
 const SAFETY_CAR_CAUTION_FACTOR=1.48;  // ritmo ridotto subito dopo l'incidente, prima della SC fisica
 const INCIDENT_SECOND_CAR_CHANCE=.18;  // possibilità di contatto tra due vetture
@@ -2110,6 +2118,34 @@ function zoneAtProgress(c){
  return bestDist<(.5/SEGMENTS) ? best : null;
 }
 
+// SOTTO SAFETY CAR NON SI SORPASSA (v0.74.0)
+// attemptOvertakes era gia' disattivato in regime di SC, ma le posizioni in
+// classifica non nascono da li': nascono dalla distanza percorsa. E sotto SC le
+// vetture NON vanno tutte uguali - il leader segue la SC a 2.2x, chi e' staccato
+// recupera a 1.5x - quindi chi insegue guadagna metri e prima o poi scavalca in
+// classifica chi lo precede. Da qui il sesto posto che diventava decimo senza
+// che nessuno avesse sorpassato nessuno: le vetture dietro si limitavano ad
+// andare piu' forte, come da modello.
+// La regola vera e' un'altra: chi raggiunge chi lo precede si ACCODA. Il
+// recupero serve a chiudere il buco, non a passare. Quindi dopo aver mosso
+// tutti si ripercorre la fila dal primo all'ultimo e si impedisce a chiunque di
+// avvicinarsi oltre la distanza minima. Chi e' doppiato e' escluso: quello
+// sdoppiarsi lo deve, ed e' l'unico caso in cui la Safety Car lo consente.
+function scIncolonna(){
+ if(!["pending","catchup","active","restart"].includes(scState))return;
+ if(scState==="restart"&&scRestartGo)return;      // bandiera verde: si riapre
+ const min=SC_MIN_GAP_KM/Math.max(.5,circuit.lengthKm);
+ const fila=order().filter(c=>!c.finished&&!c.retired&&!c.inPit&&!c.scLapped);
+ for(let i=1;i<fila.length;i++){
+   const davanti=fila[i-1],c=fila[i];
+   const limite=totalDist(davanti)-min;
+   if(totalDist(c)<=limite)continue;
+   // Si arretra solo dentro il giro in corso: riportare una vettura oltre la
+   // linea del traguardo le farebbe contare due volte lo stesso giro.
+   const t=Math.max(c.completedLaps+.0002,limite);
+   c.progress=clamp(t-c.completedLaps,0,.9999);
+ }
+}
 function attemptOvertakes(){
  if(scState==="active"||scState==="catchup"||scState==="pending"||scState==="restart")return;
 
@@ -2367,6 +2403,7 @@ function update(dt){
    }
  }
  updateSafetyCarState();
+ scIncolonna();          // prima si incolonna, poi si valutano i sorpassi
  attemptOvertakes();
 
  const _slLeader=currentLeader();
@@ -3424,6 +3461,9 @@ function dgPagina(p){
  dg.classList.toggle("p1",p===1);
  dg.classList.toggle("p2",p===2);
  $("dgAvanti").innerHTML=p===1?"<b>CONTINUA</b>":"<b>PASSA ALLA PROSSIMA GARA</b>";
+ // Blu finche' si consulta, verde quando il passo successivo e' correre.
+ $("dgAvanti").classList.toggle("primario",p===1);
+ $("dgAvanti").classList.toggle("vai",p===2);
  const sc=dg.querySelector(".dgPag .dgScroll");
  if(sc)try{sc.scrollTop=0}catch(e){}
 }
