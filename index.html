@@ -129,10 +129,10 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.67.0</h1>
+<h1 id="gameTitle">F1 Career v0.68.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
-<div class="panel">
+<div class="panel" id="topPanel">
   <div class="controls">
     <label>Circuito <select id="circuitSelect"></select></label>
     <label>Pilota <select id="player"></select></label>
@@ -270,6 +270,15 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 #qCount{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
  font-size:120px;font-weight:900;color:#ffd24a;text-shadow:0 0 30px rgba(0,0,0,.8);pointer-events:none}
 #qCount.on{display:flex}
+/* Durante il weekend in carriera il pannello in alto non contiene piu' niente
+   che serva: MENU, gomma di partenza e messaggio sono passati accanto alla
+   pista. Su telefono quei cento pixel valgono piu' di un riquadro vuoto. */
+body.carriera #topPanel{display:none}
+#pistaHeader #homeBtn{margin-left:auto;order:1;padding:7px 11px;font-size:11px;flex:0 0 auto}
+#pistaHeader #phMeta{order:2}
+#pistaHeader #reaction{order:3;width:100%;margin-top:2px}
+#pistaHeader label{order:2;font-size:11px;color:#8b93a7;display:flex;gap:6px;align-items:center}
+
 /* INTESTAZIONE DELLA PISTA (v0.65.0) - Il nome del circuito stava in un
    sottotitolo grigio da 12 px e i giri da percorrere non erano scritti da
    nessuna parte: due dei tre dati che servono prima di partire. Ora stanno
@@ -2453,12 +2462,29 @@ function inquadraPista(){
  if(!camVicina)aggiornaCamera();
 }
 function adattaAltezzaPista(){
- const wrap=$("trackWrap");if(!wrap)return;
+ const wrap=$("trackWrap"),panel=$("trackPanel");
+ if(!wrap)return;
  const p=vbIntera.split(" ").map(Number);
  const asp=(p[2]>0&&p[3]>0)?p[2]/p[3]:900/520;
  const larg=wrap.clientWidth||900;
- const tetto=Math.max(260,Math.round((window.innerHeight||800)*.56));
- wrap.style.height=Math.round(Math.min(Math.max(larg/asp,210),tetto))+"px";
+ let tetto=Math.max(260,Math.round((window.innerHeight||800)*.56));
+ // Su telefono la pista non e' l'unica cosa che deve stare nello schermo: i
+ // comandi le stanno sotto, e un pulsante che si preme alla cieca perche' e'
+ // oltre il bordo non e' un pulsante. Su un tracciato stretto e alto come
+ // Jeddah il riquadro arrivava al tetto di altezza e spingeva fuori boost,
+ // pit e mescola. Adesso si misura cio' che le sta intorno e le si da' quello
+ // che resta: la pista e' importante, ma non fino a mangiarsi i comandi.
+ if(larg<=560&&panel){
+   try{
+     const alt=el=>(el&&el.offsetParent!==null&&!el.classList.contains("fine"))?el.offsetHeight:0;
+     const vh=window.innerHeight||800;
+     const sopra=panel.getBoundingClientRect().top+(window.scrollY||0)+alt($("pistaHeader"));
+     const sotto=alt($("ctaRow"))+alt($("quali"))+alt($("hud"))+alt($("layoutNote"));
+     const resta=vh-sopra-sotto-40;
+     tetto=Math.min(tetto,resta>190?resta:Math.max(200,Math.round(vh*.34)));
+   }catch(e){}
+ }
+ wrap.style.height=Math.round(Math.min(Math.max(larg/asp,200),tetto))+"px";
 }
 addEventListener("resize",()=>{try{inquadraPista();render();}catch(e){}});
 
@@ -3675,6 +3701,10 @@ function qualiOpen(){
  const g0=$("qGriglia");if(g0)g0.innerHTML="";
  $("quali").classList.remove("fine");
  $("quali").classList.add("on");
+ // Il pulsante che ha aperto la qualifica ora e' spento e ruba la riga che
+ // serve a CLICCA IN CURVA: durante il giro sparisce.
+ $("ctaRow").style.display="none";
+ adattaAltezzaPista();aggiornaCamera();
  qCountdown();
 }
 // Conto alla rovescia: cosi' l'unico comando e' AVVIA QUALIFICA e non serve
@@ -3813,6 +3843,13 @@ function scaricaSalvataggio(){
  assistRefresh();
  $("hudSlotPit").appendChild($("pit"));
  $("hudSlotPit").appendChild($("pitTyre"));
+ // MENU e messaggio salgono nell'intestazione della pista; la gomma di
+ // partenza scende fra i comandi. Cosi' il pannello in alto resta vuoto e su
+ // telefono si puo' togliere di mezzo del tutto.
+ $("pistaHeader").appendChild($("homeBtn"));
+ $("pistaHeader").appendChild($("reaction"));
+ const labGomma=$("startTyre").closest("label");
+ if(labGomma)$("hudSlotSec").appendChild(labGomma);
  // Ordine sotto la pista: azione principale, pannello qualifica, plancia di
  // gara. In ogni fase se ne accende uno solo, ma il posto non cambia mai.
  $("ctaRow").appendChild($("qualiBtn"));
@@ -3849,10 +3886,11 @@ function hudVisibile(){
  // Solo al cambio di stato: l'inquadratura si ricalcola, e farlo a ogni
  // fotogramma sarebbe lavoro sprecato sessanta volte al secondo.
  const dati=!!(running||startPrepared);
- if($("sideHud").classList.contains("on")!==dati){
+ if($("hud").classList.contains("on")!==attiva||$("sideHud").classList.contains("on")!==dati){
    $("sideHud").classList.toggle("on",dati);
-   aggiornaCamera();      // sposta il disegno a destra, o lo ricentra
- }
+   adattaAltezzaPista();  // i comandi appena comparsi vogliono il loro spazio
+   aggiornaCamera();      // e il disegno si sposta a destra, o si ricentra
+ }else $("sideHud").classList.toggle("on",dati);
  document.body.classList.toggle("inGara",!!(running||startPrepared));
  $("hudSlotLaunch").style.display=startPrepared?"":"none";
  $("hudSlotLights").style.display=startPrepared?"flex":"none";
@@ -3880,13 +3918,16 @@ document.addEventListener("keydown",e=>{
 $("qSkip").onclick=()=>{
  qRunning=false;cancelAnimationFrame(qRaf);qClearMarks();
  $("quali").classList.remove("on");$("quali").classList.remove("fine");
+ $("ctaRow").style.display="";
  gridOrder=null;createCars();render();      // senza qualifica si parte nell'ordine base
- setWeekend("gara");
+ setWeekend("gara");adattaAltezzaPista();aggiornaCamera();
  weekendSalva("gara",{riassunto:"qualifica saltata"});
 };
 $("qClose").onclick=()=>{
  qClearMarks();$("quali").classList.remove("on");$("quali").classList.remove("fine");
+ $("ctaRow").style.display="";
  setWeekend("gara");weekendSalva("gara");
+ adattaAltezzaPista();aggiornaCamera();
 };
 $("qClose").textContent="VAI ALLA GARA";
 pistaHeaderRefresh();
@@ -3920,6 +3961,7 @@ function setWeekend(fase){
  $("reaction").textContent=fase==="qualifica"?"Weekend iniziato: prima la qualifica."
    :fase==="gara"?"Premi “Prepara partenza”.":"Gara conclusa.";
  const p=$("careerPanel");if(p)p.style.display=(fase==="fine"||!weekendAttivo)?"":"none";
+ document.body.classList.toggle("carriera",car&&weekendAttivo);
  if(typeof hudVisibile==="function")hudVisibile();
  if(typeof pistaHeaderRefresh==="function")pistaHeaderRefresh();
 }
