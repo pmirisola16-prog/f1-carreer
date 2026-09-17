@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.70.0</h1>
+<h1 id="gameTitle">F1 Career v0.71.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -237,6 +237,18 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 #careerGoBtn{display:block;width:100%;max-width:520px;margin:6px auto 12px;
  padding:18px;font-size:19px;text-align:center}
 #careerSecondari{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+/* Una pagina per volta: l'altra non esiste, non e' solo piu' in basso. */
+#dgCard{display:flex;flex-direction:column;max-height:88vh}
+.dgPag{display:none;flex:1;min-height:0;flex-direction:column}
+#dopoGara.p1 #dgPag1,#dopoGara.p2 #dgPag2{display:flex}
+#dopoGara.p1 #dgIndietro{display:none}
+.dgScroll{flex:1;min-height:0;overflow:auto;margin-top:6px}
+#dgAvanti{text-align:center;margin-top:16px;padding:18px;font-size:18px;flex:0 0 auto}
+#dgIndietro{margin-top:10px;padding:9px;font-size:12px;text-align:center;flex:0 0 auto}
+/* Il pulsante +1 e' un comando in riga, non un blocco: senza questa riga la
+   regola generale dei pulsanti nelle schede lo stira su tutta la larghezza e
+   la barra della statistica finisce chissa' dove. */
+#dgStats .plRow button,#plStats .plRow button{display:inline-block;width:auto}
 #careerSecondari button{font-size:12px;padding:8px 11px}
 /* QUALIFICA (v0.65.0) - Era una barra fissa in fondo allo SCHERMO. Su telefono
    il testo dei riferimenti la faceva crescere in altezza finche' il pulsante da
@@ -410,6 +422,7 @@ body.carriera #topPanel{display:none}
       <button id="homeNew"><b>NUOVA CARRIERA</b><br><span class="small">Crea il tuo pilota. Le gare seguono il calendario.</span></button>
       <button id="homeContinue"><b>CONTINUA CARRIERA</b><br><span class="small" id="homeContinueInfo">Nessuna carriera salvata.</span></button>
       <button id="homeFree"><b>GARA LIBERA</b><br><span class="small">Scegli circuito, giri e pilota.</span></button>
+      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.71.0</div>
       <button id="installBtn" style="display:none"><b>INSTALLA SUL TELEFONO</b><br><span class="small">Icona sulla schermata iniziale, schermo intero, funziona senza rete.</span></button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="backupBtn" style="flex:1;width:auto;margin:0;padding:10px;font-size:12px;text-align:center">SALVA UNA COPIA</button>
@@ -460,21 +473,25 @@ body.carriera #topPanel{display:none}
   </div>
   <div class="sec" id="hudSlotSec"></div>
 </div>
+<!-- Fine gara in due pagine. Prima stava tutto in una scheda sola: risultato,
+     classifica del campionato e sei statistiche da potenziare. Su telefono
+     voleva dire scorrere alla cieca dentro un riquadro che scorre a sua volta,
+     e la classifica generale si vedeva a meta'. Una cosa per volta: prima come
+     e' andata, poi come spendere quello che hai guadagnato. -->
 <div id="dopoGara">
-  <div class="homeCard" style="max-width:720px">
+  <div class="homeCard" id="dgCard" style="max-width:720px">
     <h2 id="dgTitolo">Gara conclusa</h2>
     <p class="sub" id="dgSub"></p>
-    <div style="display:flex;gap:22px;flex-wrap:wrap">
-      <div style="flex:1;min-width:230px">
-        <div class="small"><b>Classifica piloti</b></div>
-        <table><tbody id="dgClassifica"></tbody></table>
-      </div>
-      <div style="flex:1;min-width:250px">
-        <div class="small"><b>Il tuo pilota</b> · <span id="dgXp"></span></div>
-        <div id="dgStats"></div>
-      </div>
+    <div class="dgPag" id="dgPag1">
+      <div class="small"><b>Classifica piloti</b></div>
+      <div class="dgScroll"><table><tbody id="dgClassifica"></tbody></table></div>
     </div>
-    <button id="dgAvanti" style="text-align:center;margin-top:18px"><b>PASSA ALLA PROSSIMA GARA</b></button>
+    <div class="dgPag" id="dgPag2">
+      <div class="small"><b>Il tuo pilota</b> · <span id="dgXp"></span></div>
+      <div class="dgScroll"><div id="dgStats"></div></div>
+    </div>
+    <button id="dgIndietro">← CLASSIFICA</button>
+    <button id="dgAvanti" class="primario"><b>CONTINUA</b></button>
   </div>
 </div>
 <div id="offerte">
@@ -3360,6 +3377,7 @@ function apriDopoGara(){
    return `<tr${id===career.pilota?' style="font-weight:700"':''}><td>${i+1}</td><td>${d?d.name:id}</td><td>${pt}</td></tr>`;
  }).join("");
  dgStatsRefresh();
+ dgPagina(1);
  $("dopoGara").classList.add("on");
 }
 // Le migliorie si assegnano qui, subito dopo la gara: e' il momento in cui si
@@ -3381,7 +3399,20 @@ function dgStatsRefresh(){
    careerSave();dgStatsRefresh();
  });
 }
+// Prima pagina: com'e' andata e dove sei in campionato. Seconda: cosa fai con
+// XP e crediti. Il pulsante grande porta avanti, e solo dalla seconda pagina
+// si esce verso la gara dopo.
+function dgPagina(p){
+ const dg=$("dopoGara");
+ dg.classList.toggle("p1",p===1);
+ dg.classList.toggle("p2",p===2);
+ $("dgAvanti").innerHTML=p===1?"<b>CONTINUA</b>":"<b>PASSA ALLA PROSSIMA GARA</b>";
+ const sc=dg.querySelector(".dgPag .dgScroll");
+ if(sc)try{sc.scrollTop=0}catch(e){}
+}
+$("dgIndietro").onclick=()=>dgPagina(1);
 $("dgAvanti").onclick=()=>{
+ if($("dopoGara").classList.contains("p1")){dgPagina(2);return;}
  $("dopoGara").classList.remove("on");
  if(careerFinita())apriOfferte(); else $("careerGoBtn").click();
 };
