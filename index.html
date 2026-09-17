@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.71.0</h1>
+<h1 id="gameTitle">F1 Career v0.72.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -224,11 +224,15 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
  .homeCard{padding:16px}
  #dopoGara .homeCard,#pilota .homeCard,#classifiche .homeCard,#resoconto .homeCard,#offerte .homeCard{max-width:100%}
  .homeCard h2{font-size:21px}
- .plRow{flex-wrap:wrap;gap:8px 10px;margin:12px 0}
- .plRow .nm{flex:1 1 auto!important;font-size:13px}
- .plRow .vl{flex:0 0 30px}
- .plRow button{flex:0 0 auto;font-size:11px;padding:7px 10px}
- .plRow .bar{flex:1 1 100%;order:3;min-width:0}
+ /* Una riga sola per statistica: sei righe da due righe ciascuna non entravano
+    nello schermo e costringevano a scorrere dentro la scheda per scoprire che
+    esisteva anche Partenza. Tutto piu' piccolo, tutto visibile insieme. */
+ .plRow{flex-wrap:nowrap;gap:8px;margin:9px 0;align-items:center}
+ .plRow .nm{flex:1 1 auto!important;font-size:12px;min-width:0;
+   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .plRow .bar{flex:0 0 62px;min-width:62px;order:0}
+ .plRow .vl{flex:0 0 24px;font-size:13px;text-align:right}
+ .plRow button{flex:0 0 auto;font-size:10px;padding:6px 8px;white-space:nowrap}
  .homeCard table{font-size:13px}
  .homeCard th,.homeCard td{padding:6px 4px}
 }
@@ -393,8 +397,11 @@ body.carriera #topPanel{display:none}
  #sideHud .cell span{font-size:8px}
  #sideHud .cell b{font-size:15px}
 }
-#quali .qWrap{max-width:1100px;margin:0 auto;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-#qHit{flex:0 0 210px;padding:22px;font-size:19px;font-weight:800;text-align:center}
+/* Queste due regole erano rimaste qui sotto da quando la qualifica era una
+   barra orizzontale, e stando piu' in basso vincevano su quelle nuove: in
+   colonna, "flex:0 0 210px" non e' larghezza ma ALTEZZA, ed e' per questo che
+   CLICCA IN CURVA era diventato un lenzuolo. Restano solo i tratti comuni. */
+#qHit{font-weight:800;text-align:center}
 .qCar{position:absolute;width:15px;height:15px;border-radius:50%;background:#ffd24a;
  border:2px solid #0d0f12;z-index:8;transform:translate(-50%,-50%);box-shadow:0 0 0 3px rgba(255,210,74,.35)}
 .qMark{fill:none;stroke:#ffd24a;stroke-width:2.5;opacity:.85}
@@ -422,7 +429,7 @@ body.carriera #topPanel{display:none}
       <button id="homeNew"><b>NUOVA CARRIERA</b><br><span class="small">Crea il tuo pilota. Le gare seguono il calendario.</span></button>
       <button id="homeContinue"><b>CONTINUA CARRIERA</b><br><span class="small" id="homeContinueInfo">Nessuna carriera salvata.</span></button>
       <button id="homeFree"><b>GARA LIBERA</b><br><span class="small">Scegli circuito, giri e pilota.</span></button>
-      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.71.0</div>
+      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.72.0</div>
       <button id="installBtn" style="display:none"><b>INSTALLA SUL TELEFONO</b><br><span class="small">Icona sulla schermata iniziale, schermo intero, funziona senza rete.</span></button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="backupBtn" style="flex:1;width:auto;margin:0;padding:10px;font-size:12px;text-align:center">SALVA UNA COPIA</button>
@@ -3733,7 +3740,17 @@ function qClearMarks(){$("trackSvg").querySelectorAll(".qMark").forEach(n=>n.rem
  const c=$("qualiCar");if(c)c.remove();}
 function qDrawMarks(){
  const svg=$("trackSvg"),path=$("trackPath");
+ // Il pallino nasce prima dei cerchi: e' lui il metro con cui si misurano.
+ if(!$("qualiCar")){
+   const dot=document.createElement("div");dot.className="qCar";dot.id="qualiCar";
+   $("trackWrap").appendChild(dot);
+ }
  const sc=scalaPista()||1;
+ // la misura vera del pallino, se e' gia' in pagina; altrimenti quella di CSS
+ const auto=$("qualiCar");
+ // Il limite superiore non e' pedanteria: se per qualunque motivo la misura
+ // del pallino tornasse sballata, il bersaglio coprirebbe mezzo circuito.
+ const rBers=Math.min(26,Math.max(11,(auto&&auto.offsetWidth?auto.offsetWidth:15)));
  qTargets.forEach((t,i)=>{
    // svgPointAtFrac applica gia' layoutFrac: passargliela di nuovo spostava i
    // cerchi di startFrac rispetto alla vettura, cioe' di 1,07 s a Shanghai e di
@@ -3741,14 +3758,13 @@ function qDrawMarks(){
    const p=svgPointAtFrac(path,t.f);
    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
    c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);
-   // 21 px di raggio sullo schermo: il doppio abbondante della vettura, che di
-   // pallino ne misura 15 piu' l'alone.
-   c.setAttribute("r",(21/sc).toFixed(1));
-   c.style.strokeWidth=(3.5/sc).toFixed(2);
+   // Il bersaglio si misura sulla vettura, non su un numero deciso a tavolino:
+   // raggio pari al diametro del pallino, cioe' un cerchio largo il doppio
+   // della macchina. Abbastanza per vederlo, non tanto da coprire la pista.
+   c.setAttribute("r",(rBers/sc).toFixed(1));
+   c.style.strokeWidth=(2.6/sc).toFixed(2);
    c.setAttribute("class","qMark");c.id="qmark-"+i;($("trackRot")||svg).appendChild(c);
  });
- const dot=document.createElement("div");dot.className="qCar";dot.id="qualiCar";
- $("trackWrap").appendChild(dot);
 }
 function qPlaceCar(frac){
  const svg=$("trackSvg"),path=$("trackPath"),len=path.getTotalLength();
