@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.79.0</h1>
+<h1 id="gameTitle">F1 Career v0.80.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -472,7 +472,7 @@ body.carriera #topPanel{display:none}
       <button id="homeNew"><b>NUOVA CARRIERA</b><br><span class="small">Crea il tuo pilota. Le gare seguono il calendario.</span></button>
       <button id="homeContinue"><b>CONTINUA CARRIERA</b><br><span class="small" id="homeContinueInfo">Nessuna carriera salvata.</span></button>
       <button id="homeFree"><b>GARA LIBERA</b><br><span class="small">Scegli circuito, giri e pilota.</span></button>
-      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.79.0</div>
+      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.80.0</div>
       <button id="installBtn" style="display:none"><b>INSTALLA SUL TELEFONO</b><br><span class="small">Icona sulla schermata iniziale, schermo intero, funziona senza rete.</span></button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="backupBtn" style="flex:1;width:auto;margin:0;padding:10px;font-size:12px;text-align:center">SALVA UNA COPIA</button>
@@ -1268,8 +1268,19 @@ function applyCircuit(id){
  // 305 km (Monaco fa storia a se'). Qui si comprimono in rapporto 60:8, cioe'
  // 7,5 giri reali per ogni giro di gioco, e Monaco resta fisso a 8 per storia.
  circuit.laps=d.giriGara||8;
- circuit.pitLoss=d.pitLoss??22;
  circuit.pitLaneTime=pitLaneTimeDb[id]??19.0;
+ // PERDITA AL PIT IN SCALA (v0.80.0)
+ // I giri veri di un Gran Premio sono il minimo per superare i 305 km, e Monaco
+ // fa storia a se'. Serve saperlo perche' il gioco comprime la gara: tenere una
+ // sosta da 22 secondi reali su sette giri la rende otto volte piu' pesante di
+ // tutto lo scarto di ritmo fra la prima e l'ultima macchina, e da li' la
+ // classifica veniva rimescolata dalla sosta invece che dalla corsa.
+ circuit.giriReali=(id==="monaco")?78:Math.max(20,Math.ceil(305/circuit.lengthKm));
+ // Perdita reale: corsia percorsa a 80 km/h, piu' la sosta, piu' le rampe di
+ // decelerazione e riaccelerazione fuori dalla zona a velocita' limitata.
+ const perditaReale=circuit.pitLaneTime+2.3+3.0;
+ circuit.pitPerdita=perditaReale*circuit.laps/circuit.giriReali;
+ circuit.pitLoss=circuit.pitPerdita;   // la usa anche l'IA per decidere se conviene
  circuit.tyreStress=d.tyreStress??1;
  circuit.zones=currentLayout().zones;
  RACE_LAPS_LOCKED=circuit.laps;
@@ -1644,6 +1655,10 @@ function regenPerLap(c){
 }
 
 function setBoost(c,on,reason=""){
+ // Primo giro senza boost, per tutti. E' la regola del DRS in Formula 1, dove
+ // resta chiuso finche' la corsa non si e' sistemata: al via le vetture sono
+ // ancora incolonnate e un boost li' dentro non e' un sorpasso, e' una lotteria.
+ if(on && c.completedLaps<1)return false;
  if(on && (scState==="active"||scState==="catchup"||scState==="pending"||scState==="restart"))return false;
  if(on && c.energy<=0.5)return false;
  if(c.boostOn===on)return true;
@@ -1819,9 +1834,30 @@ function nextTyre(c){
  if(remKm<=hardLife*.98)return"hard";
  return "hard";
 }
+// SOSTA (v0.80.0) - Il tempo a macchina ferma e' l'unica parte della sosta che
+// si guarda davvero, quindi resta quella vera: 2,0s per le squadre migliori,
+// 2,8s per le peggiori. Prima stava fra 2,50 e 3,20, cioe' mezzo secondo di
+// troppo per tutti. Tutto il resto della perdita sta nella corsia, ed e' li'
+// che si scala la distanza compressa.
 function teamPitServiceTime(c){const t=teams[c.team]||Object.values(teams)[0];
- return clamp(3.20-(t.pit-87)*.0875,2.50,3.20)+rand(-.06,.06);}
+ // Le squadre hanno un valore di pit stop fra 70 e 94: si mappa su 2,80-2,00
+ // secondi, cosi' la migliore sta davvero sui due secondi e la peggiore sui 2,8.
+ // Il piccolo casuale non deve sforare, quindi i limiti sono un filo dentro.
+ return clamp(2.80-(t.pit-70)*(.80/24),2.03,2.77)+rand(-.03,.03);}
 function pitTeamIndex(teamId){return Math.max(0,Object.keys(teams).indexOf(teamId));}
+// corsia = perdita voluta + tratto di pista saltato - sosta
+function pitLaneCorsia(serviceTime){
+ const obiettivo=circuit.pitPerdita??3.2;
+ let tratto=0;
+ try{
+   const g=pitGeometry();
+   const span=((g.exitFrac-g.entryFrac)%1+1)%1;
+   tratto=span*(circuit.baseLap||84);
+ }catch(e){}
+ // Il minimo esiste perche' una corsia da mezzo secondo non si vedrebbe e la
+ // vettura sparirebbe e ricomparirebbe di colpo.
+ return Math.max(2.5,obiettivo+tratto-serviceTime);
+}
 function pitLaneT(c){
  const stallT=c.pitStallT??.5;
  const approach=Math.max(.01,c.pitApproachTime||((c.pitLaneTime??19)*stallT));
@@ -1836,7 +1872,13 @@ function pitLaneT(c){
 }
 
 function doPit(c,next,extraRepair=0,reason=""){
- const layout=currentLayout(),laneTime=circuit.pitLaneTime??19.0,serviceTime=teamPitServiceTime(c);
+ const layout=currentLayout(),serviceTime=teamPitServiceTime(c);
+ // La corsia non e' piu' un tempo fisso preso da tabella, ma quello che serve
+ // per far perdere esattamente la perdita obiettivo. Entrando ai box la vettura
+ // salta il tratto di pista fra ingresso e uscita: quel tratto lo avrebbe
+ // percorso in un certo tempo, e va restituito. Cosi' il conto torna su ogni
+ // circuito, anche dove il tratto e' stato disegnato piu' lungo del vero.
+ const laneTime=pitLaneCorsia(serviceTime);
  const team=pitBoxes[c.team]||(pitBoxes[c.team]={busyUntil:0,active:null});
  const teamIds=Object.keys(teams),idx=Math.max(0,teamIds.indexOf(c.team));
  const stallT=teamIds.length<=1?.5:.18+.64*(idx/Math.max(1,teamIds.length-1));
