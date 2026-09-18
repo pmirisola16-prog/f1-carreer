@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.76.0</h1>
+<h1 id="gameTitle">F1 Career v0.77.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -390,6 +390,9 @@ body.carriera #topPanel{display:none}
 #ctaRow button{display:block;width:100%;max-width:520px;min-height:62px;
  font-size:19px;text-align:center;margin:10px 0 0}
 #ctaRow #qualiBtn{background:#8a6b12;border-color:#ffd24a;color:#fff}
+#gommaPartenza{display:flex;order:-1;width:100%;max-width:520px;margin:10px auto 0;
+ align-items:center;justify-content:center;gap:10px;font-size:14px;font-weight:700;color:#cfd4da}
+#gommaPartenza select{font-size:15px;font-weight:800;padding:11px 12px;min-width:130px}
 #ctaRow #qualiBtn.pronta{outline:none;color:#fff}
 #hud button{font-size:15px;font-weight:800;letter-spacing:.03em}
 #hud #boost{flex:0 0 170px;min-height:76px;font-size:21px}
@@ -446,7 +449,7 @@ body.carriera #topPanel{display:none}
       <button id="homeNew"><b>NUOVA CARRIERA</b><br><span class="small">Crea il tuo pilota. Le gare seguono il calendario.</span></button>
       <button id="homeContinue"><b>CONTINUA CARRIERA</b><br><span class="small" id="homeContinueInfo">Nessuna carriera salvata.</span></button>
       <button id="homeFree"><b>GARA LIBERA</b><br><span class="small">Scegli circuito, giri e pilota.</span></button>
-      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.76.0</div>
+      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.77.0</div>
       <button id="installBtn" style="display:none"><b>INSTALLA SUL TELEFONO</b><br><span class="small">Icona sulla schermata iniziale, schermo intero, funziona senza rete.</span></button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="backupBtn" style="flex:1;width:auto;margin:0;padding:10px;font-size:12px;text-align:center">SALVA UNA COPIA</button>
@@ -1033,11 +1036,45 @@ function savePitPaths(){
  try{localStorage.setItem(PIT_TRIM_STORE,JSON.stringify(pitTrimUser))}catch(e){}
  try{localStorage.setItem(PIT_OFFSET_STORE,JSON.stringify(pitOffsetMode))}catch(e){}
 }
+// VERSO DELLA PIT LANE (v0.77.0)
+// La corsia box e' una lista di punti, e tutto il resto - il disegno, le
+// etichette PIT IN e PIT OUT, la vettura che la percorre, i box delle squadre -
+// da' per scontato che il primo punto sia l'ingresso. Per tre circuiti la lista
+// e' memorizzata al contrario, e a Baku si entrava da dove si esce.
+// Invece di correggere i dati a mano si guarda il VERSO: il vettore che va
+// dall'ingresso all'uscita sulla pista e quello che va dal primo all'ultimo
+// punto della corsia devono puntare dalla stessa parte. Se il coseno fra i due
+// e' negativo la lista e' rovesciata e si gira. Il confronto e' fra direzioni,
+// non fra coordinate: resta valido anche se la corsia e' stata disegnata su una
+// scala diversa da quella del tracciato caricato.
+const pitPathVerso=new Map();
+function pitPathOrienta(k,p){
+ const memo=pitPathVerso.get(k);
+ if(memo&&memo.src===p)return memo.out;
+ let out=p;
+ try{
+   const path=$("trackPath"),g=pitGeometry();
+   if(path&&g&&isFinite(g.entryFrac)&&isFinite(g.exitFrac)){
+     const pe=trackPoint(path,g.entryFrac),px=trackPoint(path,g.exitFrac);
+     const a=p[0],b=p[p.length-1];
+     const vt=[px.x-pe.x,px.y-pe.y],vp=[b[0]-a[0],b[1]-a[1]];
+     const nt=Math.hypot(vt[0],vt[1]),np=Math.hypot(vp[0],vp[1]);
+     // Se i due capi della corsia quasi coincidono il verso non e' misurabile:
+     // meglio lasciare i dati come stanno che girarli a caso.
+     if(nt>1&&np>1&&(vt[0]*vp[0]+vt[1]*vp[1])/(nt*np)<0)out=p.slice().reverse();
+   }
+ }catch(e){}
+ pitPathVerso.set(k,{src:p,out});
+ return out;
+}
 function pitPathFor(id){
  const k=id||circuit.id;
  if(pitOffsetMode[k])return null;   // forzato al modello a offset
  const p=pitPathUser[k]||pitPathDb[k];
- return (Array.isArray(p)&&p.length>=2)?p:null;
+ if(!(Array.isArray(p)&&p.length>=2))return null;
+ // Il verso si misura contro la geometria del circuito in pista: per un altro
+ // circuito il confronto sarebbe fatto con i dati sbagliati.
+ return (k===circuit.id)?pitPathOrienta(k,p):p;
 }
 const polyCache=new WeakMap();
 function polyMeasure(pts){
@@ -4008,8 +4045,12 @@ function scaricaSalvataggio(){
  chiudi.onclick=()=>tabelloneApri(false);
  $("tabellone").insertBefore(chiudi,$("tabelloneCorpo"));
  $("pistaHeader").appendChild($("reaction"));
+ // La gomma di partenza si sceglie una volta sola, subito prima del via, ed e'
+ // una decisione grossa: stava in fondo alla plancia in caratteri da 11 px,
+ // fra "Pausa" e "Velocita'". Ora vive accanto a PREPARA PARTENZA e sparisce
+ // con lui appena la gara comincia, perche' dopo non serve piu' a niente.
  const labGomma=$("startTyre").closest("label");
- if(labGomma)$("hudSlotSec").appendChild(labGomma);
+ if(labGomma){labGomma.id="gommaPartenza";$("ctaRow").appendChild(labGomma);}
  // Ordine sotto la pista: azione principale, pannello qualifica, plancia di
  // gara. In ogni fase se ne accende uno solo, ma il posto non cambia mai.
  $("ctaRow").appendChild($("qualiBtn"));
@@ -4077,6 +4118,7 @@ function hudVisibile(){
  // Sparendo, la riga si svuota e quello spazio torna alla pista da solo.
  const serve=!casa&&weekend==="gara"&&!running&&!startPrepared&&!raceEnded&&cars&&cars.length;
  $("prepare").style.display=serve?"":"none";
+ const gp=$("gommaPartenza");if(gp)gp.style.display=serve?"flex":"none";
 }
 function hudRefresh(){
  hudVisibile();
