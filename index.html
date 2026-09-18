@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.77.0</h1>
+<h1 id="gameTitle">F1 Career v0.79.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -331,6 +331,9 @@ body.carriera #topPanel{display:none}
 .pill{font-size:11px;font-weight:800;letter-spacing:.06em;padding:5px 9px;
  border-radius:999px;border:1px solid;white-space:nowrap}
 .pill.giri{color:#ffd24a;border-color:#6b5716;background:#2a2310}
+/* A che punto sei del campionato: senza, sapevi solo dove correvi, non quanto
+   mancava alla fine - e in carriera e' l'informazione che decide le scelte. */
+.pill.round{color:#9fc7ff;border-color:#24406b;background:#111b2a}
 .pill.naz{color:#9ba3ad;border-color:#343a43;background:#171a1f}
 .pill.fase{color:#8b93a7;border-color:#343a43;background:#171a1f}
 .pill.fase.qualifica{color:#ffd24a;border-color:#6b5716;background:#2a2310}
@@ -363,6 +366,26 @@ body.carriera #topPanel{display:none}
    allarga a sinistra quel tanto che basta, cosi' il circuito le scorre
    accanto invece che sotto. I numeri si rimpiccioliscono, perche' li leggi
    con la coda dell'occhio mentre guardi la pista. */
+/* ESITO DELLA PARTENZA (v0.78.0) - Al rilascio dei semafori l'unica traccia
+   era una riga di testo fuori dalla pista, che nessuno legge mentre guarda le
+   vetture scattare. Qui compare dove stai gia' guardando, resta due secondi e
+   se ne va: e' un verdetto, non un dato da consultare. */
+#esitoPartenza{position:absolute;right:10px;top:10px;z-index:9;display:none;
+ padding:9px 14px;border-radius:10px;border:1px solid;font-weight:900;
+ letter-spacing:.04em;text-align:right;line-height:1.15;
+ background:rgba(13,15,20,.92);pointer-events:none}
+#esitoPartenza.on{display:block;animation:esitoEntra .28s ease-out}
+#esitoPartenza span{display:block;font-size:9px;font-weight:800;letter-spacing:.1em;
+ color:#8b93a7;margin-bottom:2px}
+#esitoPartenza b{font-size:19px;display:block}
+#esitoPartenza.Perfetta{border-color:#35b365;color:#5ad17a}
+#esitoPartenza.Ottima{border-color:#35b365;color:#5ad17a}
+#esitoPartenza.Buona{border-color:#6b5716;color:#ffd24a}
+#esitoPartenza.Scarsa{border-color:#8a5a12;color:#f0a03a}
+#esitoPartenza.Pessima{border-color:#7a2f2a;color:#e0574f}
+@keyframes esitoEntra{from{opacity:0;transform:translateY(-8px) scale(.94)}to{opacity:1;transform:none}}
+@media(max-width:720px){#esitoPartenza{padding:7px 11px;top:8px;right:8px}
+ #esitoPartenza b{font-size:16px}}
 #sideHud{position:absolute;left:8px;top:40px;z-index:6;width:84px;
  display:none;flex-direction:column;gap:6px;pointer-events:none}
 #sideHud.on{display:flex}
@@ -449,7 +472,7 @@ body.carriera #topPanel{display:none}
       <button id="homeNew"><b>NUOVA CARRIERA</b><br><span class="small">Crea il tuo pilota. Le gare seguono il calendario.</span></button>
       <button id="homeContinue"><b>CONTINUA CARRIERA</b><br><span class="small" id="homeContinueInfo">Nessuna carriera salvata.</span></button>
       <button id="homeFree"><b>GARA LIBERA</b><br><span class="small">Scegli circuito, giri e pilota.</span></button>
-      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.77.0</div>
+      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.79.0</div>
       <button id="installBtn" style="display:none"><b>INSTALLA SUL TELEFONO</b><br><span class="small">Icona sulla schermata iniziale, schermo intero, funziona senza rete.</span></button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="backupBtn" style="flex:1;width:auto;margin:0;padding:10px;font-size:12px;text-align:center">SALVA UNA COPIA</button>
@@ -585,6 +608,7 @@ body.carriera #topPanel{display:none}
       <div id="pistaHeader">
         <div id="phNome">-</div>
         <div id="phMeta">
+          <span class="pill round" id="phRound" style="display:none">-</span>
           <span class="pill giri" id="phGiri">-</span>
           <span class="pill naz" id="phNaz">-</span>
           <span class="pill fase" id="phFase">-</span>
@@ -594,6 +618,7 @@ body.carriera #topPanel{display:none}
         <div id="layoutBadge" class="layoutBadge">Layout: Melbourne</div>
         <div id="safetyCarDot" class="safetyCar">SC</div>
         <div id="sideHud"></div>
+        <div id="esitoPartenza"></div>
         <svg id="trackSvg" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet">
           <g id="trackRot">
           <path id="trackPath" class="trackBase"
@@ -2868,6 +2893,7 @@ function prepare(){
  aiSimulationMode=false;
  circuit.laps=RACE_LAPS_LOCKED;createCars();raceEnded=false;pitBoxes={};raceClock=0;playerPitRequested=false;startLaunchLastLeaderSeg=-1;$("pit").classList.remove("active");$("restartBtn").disabled=true;$("events").textContent="";resetSafetyCar();render();resetLights();
  if(typeof tabelloneApri==="function")tabelloneApri(false);
+ if($("esitoPartenza"))$("esitoPartenza").className="";
  startPrepared=true;lightsOutAt=null;pressedAt=null;
  $("prepare").disabled=true;$("player").disabled=true;$("startTyre").disabled=true;$("circuitSelect").disabled=true;$("launch").disabled=false;
  // render() qui sopra gira PRIMA che startPrepared diventi true, e finche' la
@@ -2918,6 +2944,19 @@ function finishStart(rms){
  running=true;paused=false;lastTs=null;accum=0;startPrepared=false;
  $("pause").disabled=false;$("pit").disabled=false;$("prepare").disabled=true;$("launch").disabled=true;
  $("reaction").textContent=`Partenza: ${label}`;
+ mostraEsitoPartenza(label,rms);
+}
+// Due secondi e sparisce: se restasse coprirebbe la pista proprio nel momento
+// in cui c'e' piu' da guardare, cioe' le prime curve.
+let esitoPartenzaTimer=null;
+function mostraEsitoPartenza(label,rms){
+ const el=$("esitoPartenza");if(!el)return;
+ const quando=(rms==null)?"":(rms<0?"rilascio anticipato":`${Math.round(rms)} ms`);
+ el.className="on "+label;
+ el.innerHTML=`<span>PARTENZA</span><b>${label.toUpperCase()}</b>`+
+   (quando?`<span style="margin:2px 0 0">${quando}</span>`:"");
+ clearTimeout(esitoPartenzaTimer);
+ esitoPartenzaTimer=setTimeout(()=>{el.className="";},2200);
 }
 
 $("prepare").onclick=()=>{
@@ -4068,6 +4107,16 @@ function pistaHeaderRefresh(){
  $("phNome").textContent=circuit.name||"-";
  const g=circuit.laps||RACE_LAPS_LOCKED||0;
  $("phGiri").textContent=g===1?"1 GIRO":`${g} GIRI`;
+ // Il try non e' pigrizia: pistaHeaderRefresh gira anche al primo caricamento,
+ // quando lo stato della carriera potrebbe non esistere ancora.
+ try{
+   const r=$("phRound");
+   if(r){
+     const attiva=(gameMode==="career"&&career&&weekendAttivo);
+     r.style.display=attiva?"":"none";
+     if(attiva)r.textContent=`ROUND ${Math.min(career.gara+1,CALENDARIO.length)}/${CALENDARIO.length}`;
+   }
+ }catch(e){}
  $("phNaz").textContent=(circuit.nation||"").toUpperCase();
  const f=$("phFase");
  f.className="pill fase "+(weekend||"");
