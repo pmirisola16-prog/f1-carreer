@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.80.0</h1>
+<h1 id="gameTitle">F1 Career v0.81.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -247,6 +247,15 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
  padding:18px;font-size:19px;text-align:center}
 #careerSecondari{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 /* Una pagina per volta: l'altra non esiste, non e' solo piu' in basso. */
+#sviluppo{position:fixed;inset:0;z-index:60;display:none;align-items:center;
+ justify-content:center;background:rgba(8,10,14,.94);padding:16px}
+#sviluppo.on{display:flex}
+#svCard{display:flex;flex-direction:column;max-height:92vh}
+#svChiudi{text-align:center;margin-top:14px;padding:16px;font-size:17px;flex:0 0 auto}
+#svVoci .plRow .nm{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+#svVoci .plRow .nm i{font-style:normal;font-size:10px;color:#8b93a7}
+#svVoci .plRow button{min-width:74px}
+#svVoci .su{color:#5ad17a;font-size:11px;font-weight:800}
 #dgCard{display:flex;flex-direction:column;max-height:88vh}
 .dgPag{display:none;flex:1;min-height:0;flex-direction:column}
 #dopoGara.p1 #dgPag1,#dopoGara.p2 #dgPag2{display:flex}
@@ -472,7 +481,7 @@ body.carriera #topPanel{display:none}
       <button id="homeNew"><b>NUOVA CARRIERA</b><br><span class="small">Crea il tuo pilota. Le gare seguono il calendario.</span></button>
       <button id="homeContinue"><b>CONTINUA CARRIERA</b><br><span class="small" id="homeContinueInfo">Nessuna carriera salvata.</span></button>
       <button id="homeFree"><b>GARA LIBERA</b><br><span class="small">Scegli circuito, giri e pilota.</span></button>
-      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.80.0</div>
+      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.81.0</div>
       <button id="installBtn" style="display:none"><b>INSTALLA SUL TELEFONO</b><br><span class="small">Icona sulla schermata iniziale, schermo intero, funziona senza rete.</span></button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="backupBtn" style="flex:1;width:auto;margin:0;padding:10px;font-size:12px;text-align:center">SALVA UNA COPIA</button>
@@ -528,6 +537,18 @@ body.carriera #topPanel{display:none}
      voleva dire scorrere alla cieca dentro un riquadro che scorre a sua volta,
      e la classifica generale si vedeva a meta'. Una cosa per volta: prima come
      e' andata, poi come spendere quello che hai guadagnato. -->
+<!-- SVILUPPO DELLA VETTURA (v0.81.0) - I crediti esistevano dalla v0.39 e non
+     compravano niente: si accumulavano e basta. Qui si spendono, sulle stesse
+     cinque voci che gia' determinano il valore di ogni monoposto. -->
+<div id="sviluppo">
+  <div class="homeCard" id="svCard">
+    <h2>Sviluppo vettura</h2>
+    <p class="sub" id="svSub"></p>
+    <div class="dgScroll"><div id="svVoci"></div></div>
+    <div class="small" id="svNota" style="margin-top:8px"></div>
+    <button id="svChiudi" class="vai"><b>CONTINUA</b></button>
+  </div>
+</div>
 <div id="dopoGara">
   <div class="homeCard" id="dgCard" style="max-width:720px">
     <h2 id="dgTitolo">Gara conclusa</h2>
@@ -702,6 +723,7 @@ body.carriera #topPanel{display:none}
           <button id="pilotaBtn">IL TUO PILOTA</button>
           <button id="simStagioneBtn">SIMULA STAGIONE</button>
           <button id="resocontoBtn">RESOCONTO STAGIONE</button>
+          <button id="sviluppoBtn">SVILUPPO VETTURA</button>
         </div>
       </div>
 
@@ -3592,6 +3614,13 @@ $("dgIndietro").onclick=()=>dgPagina(1);
 $("dgAvanti").onclick=()=>{
  if($("dopoGara").classList.contains("p1")){dgPagina(2);return;}
  $("dopoGara").classList.remove("on");
+ // La finestra di sviluppo si infila qui, fra il risultato e la gara dopo: e'
+ // il momento in cui hai appena visto quanto ti manca e hai i crediti in mano.
+ if(!careerFinita()&&finestraSviluppo()){apriSviluppo();return;}
+ if(careerFinita())apriOfferte(); else $("careerGoBtn").click();
+};
+$("svChiudi").onclick=()=>{
+ $("sviluppo").classList.remove("on");
  if(careerFinita())apriOfferte(); else $("careerGoBtn").click();
 };
 function apriClassifiche(){
@@ -3776,6 +3805,84 @@ function evolviVetture(){
    });
  });
 }
+// ---- SPESA DEI CREDITI (v0.81.0) ----
+// Tre finestre a stagione, come i pacchetti di aggiornamenti veri: dopo la
+// sesta, la dodicesima e la diciottesima gara. Si compra un punto per volta, e
+// il prezzo sale a ogni punto preso sulla stessa voce nella stessa stagione:
+// serve a impedire che una stagione fortunata si trasformi tutta in aerodinamica.
+const SVILUPPO_GARE=[6,12,18];
+const COSTI_SVILUPPO=[800,1400,2200,3200,4400];
+const VOCI_SVILUPPO=[
+ {k:"power",     nome:"Velocità di punta", cosa:"pace in rettilineo · 0,025 s/giro"},
+ {k:"aero",      nome:"Carico in curva",   cosa:"pace nei curvoni · 0,030 s/giro"},
+ {k:"powerUnit", nome:"Power unit",        cosa:"energia per il boost"},
+ {k:"reliability",nome:"Affidabilità",     cosa:"meno guasti e ritiri"},
+ {k:"pit",       nome:"Squadra ai box",    cosa:"sosta più rapida"}
+];
+function costoSviluppo(k){
+ // Il controllo sulla stagione non e' ridondante: senza, i prezzi resterebbero
+ // alti l'anno dopo e il conteggio dei punti presi non ripartirebbe mai.
+ const sp=(career.svilSpesi&&career.svilSpesi.stagione===career.stagione&&
+           career.svilSpesi.voci&&career.svilSpesi.voci[k])||0;
+ return COSTI_SVILUPPO[sp]??(COSTI_SVILUPPO[COSTI_SVILUPPO.length-1]+1400*(sp-COSTI_SVILUPPO.length+1));
+}
+function finestraSviluppo(){return SVILUPPO_GARE.includes(career?career.gara:-1);}
+function squadraGiocatore(){
+ const d=drivers.find(x=>x.id===(career&&career.pilota));
+ return d?d.team:null;
+}
+// applicaSviluppo somma i bonus a "teams" partendo da "teams": richiamarla due
+// volte raddoppierebbe tutto. Qui si riparte sempre dai dati puri della categoria.
+function ricalcolaSviluppo(){
+ const c=CATEGORIE[categoriaAttiva]||CATEGORIE.f1;
+ teams=c.teams;
+ applicaSviluppo();
+}
+function compraSviluppo(k){
+ if(!career||!finestraSviluppo())return;
+ const t=squadraGiocatore();if(!t)return;
+ const costo=costoSviluppo(k);
+ if((career.crediti||0)<costo)return;
+ career.crediti-=costo;
+ career.sviluppo=career.sviluppo||{};
+ career.sviluppo[t]=career.sviluppo[t]||{};
+ career.sviluppo[t][k]=(career.sviluppo[t][k]||0)+1;
+ if(!career.svilSpesi||career.svilSpesi.stagione!==career.stagione)
+   career.svilSpesi={stagione:career.stagione,voci:{}};
+ career.svilSpesi.voci[k]=(career.svilSpesi.voci[k]||0)+1;
+ ricalcolaSviluppo();
+ careerSave();sviluppoRefresh();careerRefresh();
+ log(`Sviluppo: ${VOCI_SVILUPPO.find(v=>v.k===k).nome} +1 (-${costo} crediti)`);
+}
+function sviluppoRefresh(){
+ if(!$("svVoci")||!career)return;
+ const t=squadraGiocatore(), sq=t?teams[t]:null;
+ const aperta=finestraSviluppo();
+ $("svSub").textContent=`${sq?sq.name:"-"} · ${career.crediti||0} crediti disponibili`;
+ $("svVoci").innerHTML=VOCI_SVILUPPO.map(v=>{
+   const val=sq?(sq[v.k]||0):0;
+   const presi=(career.svilSpesi&&career.svilSpesi.stagione===career.stagione&&
+                career.svilSpesi.voci[v.k])||0;
+   const costo=costoSviluppo(v.k);
+   const puo=aperta&&(career.crediti||0)>=costo&&val<99;
+   return `<div class="plRow">
+     <div class="nm"><b>${v.nome}</b><i>${v.cosa}</i></div>
+     <div class="bar"><i style="width:${clamp((val-55)/44*100,0,100)}%"></i></div>
+     <div class="vl">${val}</div>
+     <button data-sv="${v.k}" ${puo?"":"disabled"}>+1 · ${costo}</button>
+     ${presi?`<span class="su">+${presi}</span>`:""}
+   </div>`;
+ }).join("");
+ $("svVoci").querySelectorAll("button[data-sv]").forEach(b=>{
+   b.onclick=()=>compraSviluppo(b.getAttribute("data-sv"));
+ });
+ const prossima=SVILUPPO_GARE.find(g=>g>career.gara);
+ $("svNota").textContent=aperta
+   ? "Finestra aperta: quello che compri vale da subito e per sempre."
+   : (prossima?`Finestra chiusa. La prossima si apre dopo la gara ${prossima}.`
+              :"Nessun'altra finestra questa stagione.");
+}
+function apriSviluppo(){sviluppoRefresh();$("sviluppo").classList.add("on");}
 function applicaSviluppo(){
  if(!career||!career.sviluppo)return;
  const base=teams;
@@ -4245,6 +4352,7 @@ $("qClose").onclick=()=>{
  setWeekend("gara");weekendSalva("gara");
  adattaAltezzaPista();aggiornaCamera();
 };
+$("sviluppoBtn").onclick=()=>apriSviluppo();
 $("qClose").textContent="VAI ALLA GARA";
 pistaHeaderRefresh();
 
