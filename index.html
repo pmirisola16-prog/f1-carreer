@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.81.0</h1>
+<h1 id="gameTitle">F1 Career v0.82.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -252,15 +252,39 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 #sviluppo.on{display:flex}
 #svCard{display:flex;flex-direction:column;max-height:92vh}
 #svChiudi{text-align:center;margin-top:14px;padding:16px;font-size:17px;flex:0 0 auto}
-#svVoci .plRow .nm{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
-#svVoci .plRow .nm i{font-style:normal;font-size:10px;color:#8b93a7}
-#svVoci .plRow button{min-width:74px}
-#svVoci .su{color:#5ad17a;font-size:11px;font-weight:800}
+/* Le voci dello sviluppo NON riusano .plRow: quella riga e' fatta per stare
+   tutta su una linea, e qui il nome della caratteristica finiva schiacciato via
+   dai puntini di sospensione mentre il pulsante usciva dallo schermo. Aumentare
+   qualcosa senza sapere cosa non e' una scelta. Due righe per voce: sopra il
+   nome e il valore, sotto la barra e il prezzo. */
+.svVoce{border-top:1px solid #222834;padding:10px 0}
+.svVoce:first-child{border-top:none}
+.svTop{display:flex;align-items:baseline;gap:8px}
+.svTop b{font-size:14px}
+.svTop .cosa{font-size:10px;color:#8b93a7;flex:1;min-width:0}
+.svTop .val{font-size:17px;font-weight:800}
+.svTop .su{color:#5ad17a;font-size:11px;font-weight:800}
+.svGiu{display:flex;align-items:center;gap:10px;margin-top:7px}
+.svGiu .bar{flex:1;min-width:0;height:8px;background:#232a38;border-radius:6px;overflow:hidden}
+.svGiu .bar i{display:block;height:100%;background:#4aa3ff}
+#svVoci button{display:block;width:auto;flex:0 0 auto;margin:0;padding:8px 12px;
+ font-size:12px;font-weight:800;text-align:center;white-space:nowrap}
 #dgCard{display:flex;flex-direction:column;max-height:88vh}
 .dgPag{display:none;flex:1;min-height:0;flex-direction:column}
 #dopoGara.p1 #dgPag1,#dopoGara.p2 #dgPag2{display:flex}
 #dopoGara.p1 #dgIndietro{display:none}
 .dgScroll{flex:1;min-height:0;overflow:auto;margin-top:6px}
+/* Due classifiche nello stesso spazio: il campionato ha due storie parallele e
+   su un telefono non ci stanno affiancate. La riga del giocatore e quella della
+   sua squadra restano marcate, perche' e' la prima cosa che si cerca. */
+.dgTab{display:flex;gap:6px;margin-bottom:8px;flex:0 0 auto}
+.dgTab button{flex:1;width:auto;display:block;margin:0;padding:9px;font-size:12px;
+ font-weight:800;text-align:center}
+.dgTab button.on{background:#1d5fd8;border-color:#4b82ee;color:#fff}
+#dgClassifica tr.mia{font-weight:800;background:#151b26}
+#dgClassifica td{padding:7px 6px}
+#dgClassifica td:first-child{width:28px;color:#8b93a7}
+#dgClassifica td:last-child{text-align:right;font-weight:800;width:44px}
 #dgAvanti{text-align:center;margin-top:16px;padding:18px;font-size:18px;flex:0 0 auto}
 #dgIndietro{margin-top:10px;padding:9px;font-size:12px;text-align:center;flex:0 0 auto}
 /* Il pulsante +1 e' un comando in riga, non un blocco. ".homeCard button" e'
@@ -481,7 +505,7 @@ body.carriera #topPanel{display:none}
       <button id="homeNew"><b>NUOVA CARRIERA</b><br><span class="small">Crea il tuo pilota. Le gare seguono il calendario.</span></button>
       <button id="homeContinue"><b>CONTINUA CARRIERA</b><br><span class="small" id="homeContinueInfo">Nessuna carriera salvata.</span></button>
       <button id="homeFree"><b>GARA LIBERA</b><br><span class="small">Scegli circuito, giri e pilota.</span></button>
-      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.81.0</div>
+      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.82.0</div>
       <button id="installBtn" style="display:none"><b>INSTALLA SUL TELEFONO</b><br><span class="small">Icona sulla schermata iniziale, schermo intero, funziona senza rete.</span></button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="backupBtn" style="flex:1;width:auto;margin:0;padding:10px;font-size:12px;text-align:center">SALVA UNA COPIA</button>
@@ -554,7 +578,10 @@ body.carriera #topPanel{display:none}
     <h2 id="dgTitolo">Gara conclusa</h2>
     <p class="sub" id="dgSub"></p>
     <div class="dgPag" id="dgPag1">
-      <div class="small"><b>Classifica piloti</b></div>
+      <div class="dgTab">
+        <button id="dgTabPiloti" class="on">PILOTI</button>
+        <button id="dgTabTeam">COSTRUTTORI</button>
+      </div>
       <div class="dgScroll"><table><tbody id="dgClassifica"></tbody></table></div>
     </div>
     <div class="dgPag" id="dgPag2">
@@ -3569,13 +3596,35 @@ function apriDopoGara(){
  $("dgSub").textContent=ultima
    ? `Partito ${ultima.griglia}° · ${ultima.ritirato?"ritirato":ultima.arrivo+"°"} · ${ultima.puntiGara} punti · ${ultima.fatti} sorpassi, ${ultima.subiti} subiti`
    : "";
- $("dgClassifica").innerHTML=careerOrdinate(career.punti).slice(0,10).map(([id,pt],i)=>{
-   const d=drivers.find(x=>x.id===id);
-   return `<tr${id===career.pilota?' style="font-weight:700"':''}><td>${i+1}</td><td>${d?d.name:id}</td><td>${pt}</td></tr>`;
- }).join("");
+ dgClassificaRefresh();
  dgStatsRefresh();
  dgPagina(1);
  $("dopoGara").classList.add("on");
+}
+// La classifica era tagliata ai primi dieci: chi sta undicesimo non si vedeva,
+// e in una stagione da rookie e' esattamente li' che stai. Ora sono complete
+// tutte e due, e scorrono dentro il loro riquadro.
+let dgVista="piloti";
+function dgClassificaRefresh(){
+ const tb=$("dgClassifica");if(!tb||!career)return;
+ $("dgTabPiloti").classList.toggle("on",dgVista==="piloti");
+ $("dgTabTeam").classList.toggle("on",dgVista==="team");
+ if(dgVista==="piloti"){
+   tb.innerHTML=careerOrdinate(career.punti).map(([id,pt],i)=>{
+     const d=drivers.find(x=>x.id===id);
+     return `<tr class="${id===career.pilota?"mia":""}"><td>${i+1}</td><td>${d?d.name:id}</td><td>${pt}</td></tr>`;
+   }).join("");
+ }else{
+   // Anche le squadre a zero punti: una classifica costruttori che comincia dal
+   // quinto posto non dice niente su quanto sei lontano dalla penultima.
+   const mia=(drivers.find(x=>x.id===career.pilota)||{}).team;
+   const punti=Object.assign({},career.puntiTeam||{});
+   Object.keys(teams).forEach(t=>{if(punti[t]===undefined)punti[t]=0;});
+   tb.innerHTML=careerOrdinate(punti).map(([id,pt],i)=>{
+     const t=teams[id];
+     return `<tr class="${id===mia?"mia":""}"><td>${i+1}</td><td>${t?t.name:id}</td><td>${pt}</td></tr>`;
+   }).join("");
+ }
 }
 // Le migliorie si assegnano qui, subito dopo la gara: e' il momento in cui si
 // guarda cosa e' andato storto e si decide cosa allenare.
@@ -3610,6 +3659,8 @@ function dgPagina(p){
  const sc=dg.querySelector(".dgPag .dgScroll");
  if(sc)try{sc.scrollTop=0}catch(e){}
 }
+$("dgTabPiloti").onclick=()=>{dgVista="piloti";dgClassificaRefresh();};
+$("dgTabTeam").onclick=()=>{dgVista="team";dgClassificaRefresh();};
 $("dgIndietro").onclick=()=>dgPagina(1);
 $("dgAvanti").onclick=()=>{
  if($("dopoGara").classList.contains("p1")){dgPagina(2);return;}
@@ -3865,12 +3916,16 @@ function sviluppoRefresh(){
                 career.svilSpesi.voci[v.k])||0;
    const costo=costoSviluppo(v.k);
    const puo=aperta&&(career.crediti||0)>=costo&&val<99;
-   return `<div class="plRow">
-     <div class="nm"><b>${v.nome}</b><i>${v.cosa}</i></div>
-     <div class="bar"><i style="width:${clamp((val-55)/44*100,0,100)}%"></i></div>
-     <div class="vl">${val}</div>
-     <button data-sv="${v.k}" ${puo?"":"disabled"}>+1 · ${costo}</button>
-     ${presi?`<span class="su">+${presi}</span>`:""}
+   return `<div class="svVoce">
+     <div class="svTop">
+       <b>${v.nome}</b>${presi?`<span class="su">+${presi}</span>`:""}
+       <span class="cosa">${v.cosa}</span>
+       <span class="val">${val}</span>
+     </div>
+     <div class="svGiu">
+       <div class="bar"><i style="width:${clamp((val-55)/44*100,0,100)}%"></i></div>
+       <button data-sv="${v.k}" ${puo?"":"disabled"}>+1 · ${costo} cr</button>
+     </div>
    </div>`;
  }).join("");
  $("svVoci").querySelectorAll("button[data-sv]").forEach(b=>{
