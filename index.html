@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.82.0</h1>
+<h1 id="gameTitle">F1 Career v0.83.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -285,6 +285,8 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 #dgClassifica td{padding:7px 6px}
 #dgClassifica td:first-child{width:28px;color:#8b93a7}
 #dgClassifica td:last-child{text-align:right;font-weight:800;width:44px}
+#dgClassifica .sq{display:block;font-size:10px;font-weight:400;color:#8b93a7;
+ margin-top:1px;letter-spacing:.01em}
 #dgAvanti{text-align:center;margin-top:16px;padding:18px;font-size:18px;flex:0 0 auto}
 #dgIndietro{margin-top:10px;padding:9px;font-size:12px;text-align:center;flex:0 0 auto}
 /* Il pulsante +1 e' un comando in riga, non un blocco. ".homeCard button" e'
@@ -416,6 +418,7 @@ body.carriera #topPanel{display:none}
 #esitoPartenza.Buona{border-color:#6b5716;color:#ffd24a}
 #esitoPartenza.Scarsa{border-color:#8a5a12;color:#f0a03a}
 #esitoPartenza.Pessima{border-color:#7a2f2a;color:#e0574f}
+#esitoPartenza.Anticipata{border-color:#7a2f2a;color:#e0574f}
 @keyframes esitoEntra{from{opacity:0;transform:translateY(-8px) scale(.94)}to{opacity:1;transform:none}}
 @media(max-width:720px){#esitoPartenza{padding:7px 11px;top:8px;right:8px}
  #esitoPartenza b{font-size:16px}}
@@ -505,7 +508,7 @@ body.carriera #topPanel{display:none}
       <button id="homeNew"><b>NUOVA CARRIERA</b><br><span class="small">Crea il tuo pilota. Le gare seguono il calendario.</span></button>
       <button id="homeContinue"><b>CONTINUA CARRIERA</b><br><span class="small" id="homeContinueInfo">Nessuna carriera salvata.</span></button>
       <button id="homeFree"><b>GARA LIBERA</b><br><span class="small">Scegli circuito, giri e pilota.</span></button>
-      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.82.0</div>
+      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.83.0</div>
       <button id="installBtn" style="display:none"><b>INSTALLA SUL TELEFONO</b><br><span class="small">Icona sulla schermata iniziale, schermo intero, funziona senza rete.</span></button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="backupBtn" style="flex:1;width:auto;margin:0;padding:10px;font-size:12px;text-align:center">SALVA UNA COPIA</button>
@@ -1598,7 +1601,10 @@ function tyrePenalty(c){
 }
 
 // ===== START 2.0 =====
+// Soglia dell'anticipo: sotto questo tempo misurato nessuno ha reagito davvero.
+const ANTICIPO_MS=120;
 function startLabelScore(label){
+ if(label==="Anticipata")return -1.00;
  if(label==="Perfetta")return 1.00;
  if(label==="Ottima")return .68;
  if(label==="Buona")return .18;
@@ -3008,23 +3014,35 @@ function finishStart(rms){
  const pc=playerCar();let label,delta;
  if(rms<0){label="Pessima";delta=.8}
  else{
-   // Le soglie erano tarate su un riferimento fisso di 80 di Start: con un
-   // rookie a 64 servivano 53 ms per "Perfetta" e 223 per "Buona", cioe' meno
-   // del tempo di reazione umano (250-300 ms). Il pilota non poteva vincere.
-   // Ora il riferimento e' la media del campo di gara e la scala e' umana.
+   // SCALA UMANA (v0.83.0) - Le soglie misuravano il tempo fra lo spegnimento e
+   // l'evento del dito, ma in mezzo c'e' il telefono: campionamento del touch,
+   // composizione del frame, rendering. Su Android sono 50-80 ms che non sono
+   // tuoi. Sommati ai 200-300 ms di reazione visiva di un essere umano, la
+   // vecchia soglia di 170 ms per "Perfetta" chiedeva di reagire in 100: cioe'
+   // di NON reagire e tirare a indovinare. L'unico modo per prendere Perfetta
+   // era rilasciare prima di vedere il semaforo, che e' il contrario del gioco.
+   // Le soglie sono spostate avanti di 70 ms, la latenza tipica del dispositivo.
    const valori=cars.map(x=>x.start||70);
    const media=valori.reduce((a,b)=>a+b,0)/valori.length;
    const adj=Math.max(0,rms-((pc.start||70)-media)*2.6);
-   if(adj<=170){label="Perfetta";delta=-.35}
-   else if(adj<=215){label="Ottima";delta=-.18}
-   else if(adj<=270){label="Buona";delta=0}
-   else if(adj<=360){label="Scarsa";delta=.30}
+   // Sotto i 120 ms misurati la reazione sarebbe avvenuta in 50: impossibile per
+   // un essere umano. Non e' bravura, e' anticipo, e va trattato come tale -
+   // altrimenti la strada piu' rapida per una partenza perfetta resta indovinare.
+   // Il controllo dell'anticipo guarda il tempo GREZZO, non quello corretto
+   // dallo Start: la fisiologia non sa niente delle statistiche del pilota, e
+   // un pilota bravo non deve essere accusato di anticipo per un rilascio che
+   // un essere umano puo' davvero fare.
+   if(rms<ANTICIPO_MS){label="Anticipata";delta=.95}
+   else if(adj<=270){label="Perfetta";delta=-.35}
+   else if(adj<=315){label="Ottima";delta=-.18}
+   else if(adj<=375){label="Buona";delta=0}
+   else if(adj<=460){label="Scarsa";delta=.30}
    else{label="Pessima";delta=.70}
  }
  armStartLaunch(pc,label);
  log(`GRIGLIA: ${cars.slice().sort((a,b)=>b.progress-a.progress).map((c,i)=>`${i+1}.${c.name}`).join(" · ")}`);
  log(`STRATEGIE - ${Object.keys(teams).map(t=>`${teams[t].name}: ${INDOLI[INDOLE_SQUADRA[t]||"equilibrata"].nome}, ${STILI_BOOST[STILE_SQUADRA[t]||"opportunista"].nome}, ${STILI_GOMME[GOMME_SQUADRA[t]||"standard"].nome}`).join(" · ")}`);
- log(`${pc.name}: ${label} (${rms<0?"rilascio anticipato":Math.round(rms)+" ms"})`);
+ log(`${pc.name}: ${label} (${rms<0?"rilascio prima dello spegnimento":Math.round(rms)+" ms"})`);
 
  cars.filter(c=>c!==pc).forEach(c=>{
    const l=etichettaPartenzaIA(c);
@@ -3042,7 +3060,7 @@ function finishStart(rms){
 let esitoPartenzaTimer=null;
 function mostraEsitoPartenza(label,rms){
  const el=$("esitoPartenza");if(!el)return;
- const quando=(rms==null)?"":(rms<0?"rilascio anticipato":`${Math.round(rms)} ms`);
+ const quando=(rms==null)?"":(rms<0?"partito prima":`${Math.round(rms)} ms`);
  el.className="on "+label;
  el.innerHTML=`<span>PARTENZA</span><b>${label.toUpperCase()}</b>`+
    (quando?`<span style="margin:2px 0 0">${quando}</span>`:"");
@@ -3610,9 +3628,13 @@ function dgClassificaRefresh(){
  $("dgTabPiloti").classList.toggle("on",dgVista==="piloti");
  $("dgTabTeam").classList.toggle("on",dgVista==="team");
  if(dgVista==="piloti"){
+   // La scuderia sotto il nome: oggi sai chi sono, ma fra cinque stagioni di
+   // mercato piloti i nomi da soli non diranno piu' niente.
    tb.innerHTML=careerOrdinate(career.punti).map(([id,pt],i)=>{
      const d=drivers.find(x=>x.id===id);
-     return `<tr class="${id===career.pilota?"mia":""}"><td>${i+1}</td><td>${d?d.name:id}</td><td>${pt}</td></tr>`;
+     const sq=d&&teams[d.team]?teams[d.team].name:"";
+     return `<tr class="${id===career.pilota?"mia":""}"><td>${i+1}</td>`+
+       `<td>${d?d.name:id}<span class="sq">${sq}</span></td><td>${pt}</td></tr>`;
    }).join("");
  }else{
    // Anche le squadre a zero punti: una classifica costruttori che comincia dal
