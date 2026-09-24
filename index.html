@@ -129,7 +129,7 @@ th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;white-
 </head>
 <body>
 <div class="wrap">
-<h1 id="gameTitle">F1 Career v0.83.0</h1>
+<h1 id="gameTitle">F1 Career v0.86.0</h1>
 <p class="sub" id="circuitSub">Layout Circuiti Precisi · Start 2.0 · Safety Car 2.4 · Pit Lane da OpenStreetMap</p>
 
 <div class="panel" id="topPanel">
@@ -508,7 +508,7 @@ body.carriera #topPanel{display:none}
       <button id="homeNew"><b>NUOVA CARRIERA</b><br><span class="small">Crea il tuo pilota. Le gare seguono il calendario.</span></button>
       <button id="homeContinue"><b>CONTINUA CARRIERA</b><br><span class="small" id="homeContinueInfo">Nessuna carriera salvata.</span></button>
       <button id="homeFree"><b>GARA LIBERA</b><br><span class="small">Scegli circuito, giri e pilota.</span></button>
-      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.83.0</div>
+      <div class="small" id="homeVersione" style="margin:10px 0 0;text-align:center;opacity:.6">v0.86.0</div>
       <button id="installBtn" style="display:none"><b>INSTALLA SUL TELEFONO</b><br><span class="small">Icona sulla schermata iniziale, schermo intero, funziona senza rete.</span></button>
       <div style="display:flex;gap:8px;margin-top:12px">
         <button id="backupBtn" style="flex:1;width:auto;margin:0;padding:10px;font-size:12px;text-align:center">SALVA UNA COPIA</button>
@@ -1059,7 +1059,7 @@ const pitGeoImported={
  baku:{"entryFrac": 0.9515, "exitFrac": 0.0486, "side": 1, "entryOffset": 0, "laneOffset": 0, "exitOffset": 0, "stallStart": 0.18, "stallEnd": 0.82, "entryL": 0.94429, "exitL": 0.04143},
  qatar:{"entryFrac": 0.9179, "exitFrac": 0.0793, "side": 1, "entryOffset": 0, "laneOffset": 0, "exitOffset": 0, "stallStart": 0.18, "stallEnd": 0.82, "entryL": 0.90286, "exitL": 0.06429},
  austria:{"entryFrac": 0.8968, "exitFrac": 0.1443, "side": 1, "entryOffset": 0, "laneOffset": 0, "exitOffset": 0, "stallStart": 0.18, "stallEnd": 0.82, "entryL": 0.86083, "exitL": 0.10833},
- brazil:{"entryFrac": 0.8346, "exitFrac": 0.1655, "side": -1, "entryOffset": 0, "laneOffset": 0, "exitOffset": 0, "stallStart": 0.18, "stallEnd": 0.82, "entryL": 0.89833, "exitL": 0.22917},
+ brazil:{"entryFrac": 0.8857, "exitFrac": 0.2166, "side": -1, "entryOffset": 0, "laneOffset": 0, "exitOffset": 0, "stallStart": 0.18, "stallEnd": 0.82, "entryL": 0.89833, "exitL": 0.22917},
  saudi:{"entryFrac": 0.96, "exitFrac": 0.1033, "side": -1, "entryOffset": 0, "laneOffset": 0, "exitOffset": 0, "stallStart": 0.18, "stallEnd": 0.82, "entryL": 0.085, "exitL": 0.94167},
  zandvoort:{"entryFrac": 0.9226, "exitFrac": 0.0583, "side": 1, "entryOffset": 0, "laneOffset": 0, "exitOffset": 0, "stallStart": 0.18, "stallEnd": 0.82, "entryL": 0.97429, "exitL": 0.11},
  las_vegas:{"entryFrac": 0.9587, "exitFrac": 0.0412, "side": -1, "entryOffset": 0, "laneOffset": 0, "exitOffset": 0, "stallStart": 0.18, "stallEnd": 0.82, "entryL": 0.9475, "exitL": 0.03},
@@ -1090,7 +1090,13 @@ const startFracImported={
  austin:0.9643,
  mexico:0.0236,
  las_vegas:0.9888,
- brazil:0.0637,
+ // INTERLAGOS (v0.86.0) - Il traguardo veniva ricavato a meta' strada fra ingresso
+ // e uscita box. Regola buona dove la corsia e' simmetrica attorno al rettilineo;
+ // a Interlagos no: l'uscita e' dopo la curva 3, sulla Reta Oposta, quindi la meta'
+ // cadeva 30 metri prima della S do Senna, con 208 gradi di curva nei 250 metri
+ // dopo la linea. Ora sta sul rettilineo, 250 metri prima della S. Conferma: con
+ // la linea qui, le etichette "Senna S" e "Junção" cadono sulle loro curve.
+ brazil:0.0126,
  hungary:0.948
 };
 const PIT_PATH_STORE="f1PitPaths_v017";
@@ -1977,9 +1983,13 @@ function resetSafetyCar(){
  $("safetyCarDot").style.display="none";
 }
 
+// Tutte le altre funzioni della Safety Car escludono le vetture ritirate -
+// deploySafetyCar, compressSafetyCarQueue, scIncolonna - ma questa no. E' questa
+// che decide quando la SC esce e quando si riparte: se il "leader" e' una vettura
+// ferma fuori pista, la sua posizione non arriva mai alla linea e la
+// neutralizzazione resta appesa a qualcosa che non si muove.
 function currentLeader(){
- const active=cars.filter(c=>!c.finished);
- return active.length?order().find(c=>!c.finished):null;
+ return order().find(c=>!c.finished&&!c.retired)||null;
 }
 
 function applyIncidentOutcome(c){
@@ -2241,14 +2251,12 @@ function updateSafetyCarState(){
    // Il leader può lanciare la gara solo nella parte finale del giro.
    if(leader.progress>=.80)scRestartArmed=true;
 
-   if(leader.id===$("player").value){
-     $("restartBtn").disabled=!(scRestartArmed && !scRestartGo);
-     // Se il giocatore aspetta troppo, ripartenza automatica alla linea.
-     if(leader.progress>=.975)launchRestart();
-   }else{
-     $("restartBtn").disabled=true;
-     if(scRestartArmed && leader.progress>=scRestartThreshold)launchRestart();
-   }
+   // Ripartenza sempre automatica, anche quando in testa ci sei tu. Guidarla a
+   // mano chiedeva di premere un pulsante nel momento esatto in cui stai
+   // guardando la pista, e chi non lo premeva ripartiva comunque, solo peggio:
+   // all'ultimo metro utile. Ora il momento lo sceglie la stessa regola per tutti.
+   $("restartBtn").disabled=true;
+   if(scRestartArmed && leader.progress>=scRestartThreshold)launchRestart();
  }
 }
 
@@ -2307,6 +2315,32 @@ function scIncolonna(){
    const t=Math.max(c.completedLaps+.0002,limite);
    c.progress=clamp(t-c.completedLaps,0,.9999);
  }
+}
+// SONDA (v0.84.0) - Un caso a Monaco non si riesce a riprodurre: la vettura del
+// giocatore ferma sulla linea mentre tutto il gruppo la sfila, sotto Safety Car.
+// Invece di tirare a indovinare, se la tua vettura resta immobile piu' di tre
+// secondi fuori dai box, negli eventi di gara viene scritto lo stato completo:
+// chi hai davanti, cosa dice la Safety Car, in che fase sei. La prossima volta
+// basta uno screenshot degli Eventi gara per sapere cosa e' successo.
+let sondaUltima=null,sondaFermoSec=0,sondaScritta=false;
+function sondaFermo(dt){
+ try{
+   const pc=playerCar();
+   if(!pc||pc.finished||pc.retired||pc.inPit){sondaFermoSec=0;sondaScritta=false;
+     sondaUltima=pc?totalDist(pc):null;return;}
+   const d=totalDist(pc);
+   if(sondaUltima!==null&&Math.abs(d-sondaUltima)<1e-6)sondaFermoSec+=dt;
+   else{sondaFermoSec=0;sondaScritta=false;}
+   sondaUltima=d;
+   if(sondaFermoSec>3&&!sondaScritta){
+     sondaScritta=true;
+     const o=order(),i=o.findIndex(x=>x===pc),dav=i>0?o[i-1]:null,lead=currentLeader();
+     log(`⚠ DIAGNOSTICA vettura ferma da 3s · giro ${pc.completedLaps} prog ${pc.progress.toFixed(4)} · pos ${i+1}° · `+
+       `SC ${scState}${scRestartGo?"/GO":""} · doppiato ${!!pc.scLapped} · accodato ${!!pc.scCaught} · `+
+       `pit ${pc.pits} fase ${pc.pitPhase||"-"} · leader ${lead?lead.name+(lead.retired?"(RIT)":""):"-"} · `+
+       `davanti ${dav?dav.name+" g"+dav.completedLaps+" p"+dav.progress.toFixed(4)+(dav.retired?" RIT":"")+(dav.inPit?" BOX":"")+(dav.finished?" FIN":""):"nessuno"}`);
+   }
+ }catch(e){}
 }
 function attemptOvertakes(){
  if(scState==="active"||scState==="catchup"||scState==="pending"||scState==="restart")return;
@@ -2566,6 +2600,7 @@ function update(dt){
  }
  updateSafetyCarState();
  scIncolonna();          // prima si incolonna, poi si valutano i sorpassi
+ sondaFermo(dt);
  attemptOvertakes();
 
  const _slLeader=currentLeader();
@@ -4319,6 +4354,9 @@ function scaricaSalvataggio(){
  // Ordine sotto la pista: azione principale, pannello qualifica, plancia di
  // gara. In ogni fase se ne accende uno solo, ma il posto non cambia mai.
  $("ctaRow").appendChild($("qualiBtn"));
+ // La ripartenza dietro la Safety Car e' automatica: il pulsante resta nel
+ // documento solo perche' altre parti del codice lo spengono, ma non si vede mai.
+ $("restartBtn").style.display="none";
  $("trackPanel").insertBefore($("ctaRow"),$("hud"));
  $("trackPanel").insertBefore($("quali"),$("hud"));
  // comandi di contorno: servono in gara ma non si premono al volo
