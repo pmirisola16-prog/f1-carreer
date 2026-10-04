@@ -1,4 +1,4 @@
-// Service worker - F1 Career
+// Service worker - F1 Carriera
 // Serve a una cosa sola: far partire il gioco senza rete, dall'icona sulla
 // schermata iniziale. La cache si chiama con la versione, quindi pubblicare
 // una versione nuova butta via quella vecchia da sola.
@@ -6,12 +6,13 @@
 // REGOLA: a ogni pubblicazione si cambia VERSIONE. Se non si cambia, il
 // telefono continua a servire il file vecchio dalla cache e sembra che le
 // modifiche non siano mai state fatte.
-const VERSIONE = "0.86.0";
-const CACHE = "f1career-" + VERSIONE;
+const VERSIONE = "1.6.0";
+const CACHE = "f1carriera-" + VERSIONE;
 
 const GUSCIO = [
   "./",
   "./index.html",
+  "./tv.css",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",

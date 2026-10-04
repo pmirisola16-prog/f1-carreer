@@ -1,20 +1,41 @@
 {
-  "name": "F1 Career",
-  "short_name": "F1 Career",
-  "description": "Carriera in Formula 1: qualifica, gara, contratti. Funziona senza connessione.",
+  "name": "F1 Carriera",
+  "short_name": "F1 Carriera",
+  "description": "Carriera dalla F2 alla F1: qualifica, gara, meteo, radio del team, contratti. Funziona senza connessione.",
   "id": "/f1career/",
   "start_url": "./index.html",
   "scope": "./",
   "display": "fullscreen",
-  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "display_override": [
+    "fullscreen",
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "any",
-  "background_color": "#0d0f12",
-  "theme_color": "#0d0f12",
+  "background_color": "#07080b",
+  "theme_color": "#07080b",
   "lang": "it",
-  "categories": ["games"],
+  "categories": [
+    "games"
+  ],
   "icons": [
-    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "./icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
