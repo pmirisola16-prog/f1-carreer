@@ -258,3 +258,75 @@ tr.me td:first-child,tr.mia td:first-child{border-left-color:var(--red)}
 #trackWrap.vicina .car.mia.sagoma .sag svg{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px rgba(255,255,255,.55))}
 #trackWrap.vicina .car.sagoma::after{left:calc(var(--L) / 2 + 3px)}
 #trackWrap.vicina .car.sagoma.pitCar .sag{opacity:.85}
+
+/* v1.7.0 - Mercato piloti */
+#mercato,#replaySheet{position:fixed;inset:0;z-index:93;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.7);padding:12px;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+#mercato.on,#replaySheet.on{display:flex}
+#mercato .homeCard,#replaySheet .homeCard{width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;padding:20px}
+#mcLista{overflow:auto;max-height:60vh;margin:8px 0 12px}
+.mcItem{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;background:var(--panel2);border-left:3px solid #4a5163;border-radius:3px;margin-bottom:5px}
+.mcItem span{flex:0 0 74px;font-family:var(--f-head);font-size:10px;letter-spacing:.12em;color:var(--muted);padding-top:2px}
+.mcItem p{margin:0;font-size:14px}
+.mcItem.tu{border-left-color:var(--red)}.mcItem.ritiro{border-left-color:#ffd54a}.mcItem.taglio{border-left-color:#ff7a1a}
+.mcItem.mercato{border-left-color:var(--blue)}.mcItem.promozione,.mcItem.rookie{border-left-color:var(--green)}.mcItem.libero{border-left-color:#8a92a3}
+.mcItem.f2{opacity:.75}
+
+/* v1.7.0 - Grafica gara: pista 3D in orizzontale e informazioni agli angoli */
+body.hudTV #sideHud,body.hudTV #hud .info{display:none!important}
+#pistaBox{position:relative;width:100%;overflow:hidden;border-radius:10px;background:radial-gradient(120% 90% at 50% 35%,#151c18 0,#0b0f0d 70%);border:1px solid var(--line)}
+body.vista3d #pistaBox{perspective:1100px;perspective-origin:50% 0%}
+body.vista3d #trackWrap{position:absolute;left:4%;right:4%;width:auto;transform:rotateX(36deg);transform-origin:50% 50%;border-radius:14px;
+ background:radial-gradient(90% 80% at 50% 50%,#17201b,#0e1411);box-shadow:0 30px 60px rgba(0,0,0,.55);border-color:#24302a}
+body.vista3d #trackWrap .car::after{transform:translateY(-50%) rotateX(-36deg);transform-origin:left center}
+body:not(.vista3d) #pistaBox{background:none;border:0;overflow:visible}
+#pioggiaFx{z-index:7}
+#pistaBox #radioBanner{top:46px;z-index:22}
+.ha{position:absolute;z-index:12;display:none;pointer-events:none;font-family:var(--f-head);text-shadow:0 1px 3px rgba(0,0,0,.8)}
+#pistaBox.haOn .ha{display:flex}
+#haPos{left:8px;top:8px;align-items:baseline;gap:2px;background:rgba(7,8,11,.78);border-left:3px solid var(--red);padding:3px 10px 3px 8px;border-radius:3px}
+#haPos b{font-size:30px;font-style:italic;font-weight:800;line-height:1}#haPos span{font-size:13px;color:var(--muted)}
+#haGiro{left:50%;top:8px;transform:translateX(-50%);flex-direction:column;align-items:center;background:rgba(7,8,11,.78);padding:3px 12px;border-radius:3px}
+#haGiro span{font-size:9px;letter-spacing:.2em;color:var(--muted)}#haGiro b{font-family:var(--f-num);font-size:18px;line-height:1.05}
+#haGiro i{font-style:normal;font-size:10px;letter-spacing:.14em;color:#141000;background:var(--amber);padding:0 6px;border-radius:2px;display:none;margin-top:2px}
+#haGiro.sc i{display:block}#haGiro.sc{border-bottom:2px solid var(--amber)}
+#haMeteo{right:8px;top:8px;flex-direction:column;align-items:flex-end;max-width:52%;background:rgba(7,8,11,.78);border-right:3px solid #ffd66b;padding:3px 8px;border-radius:3px;text-align:right}
+#haMeteo.bagnato{border-right-color:var(--blue)}
+#haMeteo b{font-size:13px;line-height:1.1;white-space:nowrap}#haMeteo span{font-family:var(--f-body);font-size:10px;color:#cfd6e4;white-space:nowrap}
+#haGap{left:8px;bottom:8px;flex-direction:column;gap:2px;background:rgba(7,8,11,.78);padding:4px 9px;border-radius:3px;min-width:84px}
+#haGap div{display:flex;gap:6px;align-items:baseline}#haGap b{font-family:var(--f-num);font-size:15px}#haGap span{font-size:11px;color:var(--muted);letter-spacing:.06em}
+#haGapA b{color:#ff8a8a}#haGapD b{color:#7dffb3}
+#haGomma{font-family:var(--f-num);font-size:12px;color:#cfd6e4}
+#haGomma .g{font-style:normal;display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:2.5px solid #eaeaea;font-size:9px;font-family:var(--f-head);margin-right:4px}
+#haGomma .g.soft{border-color:#ff3b3b}#haGomma .g.medium{border-color:#ffd400}#haGomma .g.hard{border-color:#eaeaea}#haGomma .g.inter{border-color:#3ddc5b}#haGomma .g.wet{border-color:#2f8bff}
+#haBoost{right:8px;bottom:8px;align-items:flex-end;gap:8px;pointer-events:auto}
+#haEnBox{display:flex;flex-direction:column;align-items:flex-end;background:rgba(7,8,11,.78);padding:4px 8px;border-radius:3px}
+#haEnBox span{font-size:9px;letter-spacing:.18em;color:var(--muted)}#haEnBox b{font-family:var(--f-num);font-size:16px}
+.haEnBar{width:56px;height:5px;background:#232a38;border-radius:4px;overflow:hidden}.haEnBar i{display:block;height:100%;background:linear-gradient(90deg,#2f8bff,#00d26a)}
+#haBoost #assistBtn{min-height:30px!important;font-size:10px!important;padding:4px 7px!important;width:auto!important;margin:0!important;align-self:flex-end;opacity:.9}
+#haBoost #boost{--en:0;position:relative;width:70px!important;height:70px!important;min-height:0!important;margin:0!important;padding:0!important;border-radius:50%!important;
+ font-family:var(--f-head);font-weight:800;font-size:11px;letter-spacing:.06em;line-height:1.05;color:#fff;background:#12161f!important;border:0!important;
+ display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.6)}
+#haBoost #boost::before{content:"";position:absolute;inset:0;border-radius:50%;padding:5px;
+ background:conic-gradient(var(--green) calc(var(--en)*1%),#2a3140 0);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+#haBoost #boost.on{background:var(--green)!important;color:#03150a;box-shadow:0 0 0 4px rgba(0,210,106,.3),0 0 24px rgba(0,210,106,.6)}
+#haBoost #boost.scarico::before{background:conic-gradient(var(--red) calc(var(--en)*1%),#2a3140 0)}
+#haBoost #boost:disabled{opacity:.55}
+@media(max-width:400px){#haPos b{font-size:24px}#haBoost #boost{width:62px!important;height:62px!important}}
+
+/* v1.7.0 - Replay sorpasso */
+#rpBox,#rpLibero{margin:6px 0 10px}
+.rpScena{height:170px;border-radius:8px;overflow:hidden;perspective:700px;background:#0b0f0d;border:1px solid var(--line)}
+.rpScena svg{width:100%;height:100%;display:block;transform:rotateX(28deg) scale(1.15);transform-origin:50% 60%}
+.rpPista{fill:none;stroke:#3a414c;stroke-linecap:round;stroke-linejoin:round}
+.rpBordo{fill:none;stroke:#e8e8e8;stroke-linecap:round;stroke-linejoin:round;opacity:.55}
+.rpAuto g.mio use{filter:drop-shadow(0 0 1.5px #fff)}
+.rpAuto g.vittima use{filter:drop-shadow(0 0 1.5px #ff8a8a)}
+.rpInfo{font-size:13px;margin-top:6px;color:#cfd6e4}.rpInfo b{font-family:var(--f-head);letter-spacing:.06em;color:#fff}
+.rpBar{height:3px;background:#232a38;margin-top:6px;border-radius:2px;overflow:hidden}.rpBar i{display:block;height:100%;background:var(--red)}
+#replayBtn{margin-top:8px}
+#pistaBox #radioBanner{left:12%;right:12%;padding:6px 10px 7px}
+#pistaBox #radioBanner .rTxt{font-size:14px}
+#pistaBox #radioBanner .rBtns{margin-top:5px}
+#pistaBox #radioBanner .rBtns button{min-height:36px;font-size:13px}
+#pdReplay{width:100%;min-height:44px;margin-top:12px}
+#replaySheet{z-index:98}

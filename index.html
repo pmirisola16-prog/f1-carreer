@@ -5183,6 +5183,8 @@ function statoPista(){
 function meteoInit(){
  aggiornaPrevisione();
  M.rain=pioggiaAl(0);M.wet=M.rain>0?Math.min(1,M.rain*1.1):0;M.scPioggia=false;M.fineGara=false;
+ const rs=rng(M.seed+"-sole")(),tp=M.prev?M.prev.tipo:"asciutto";
+ M.sole=+(tp==="asciutto"?.6+rs*.4:tp==="variabile"?.25+rs*.5:.05+rs*.35).toFixed(2);
 }
 Object.assign(M,{pioggiaAl,prossimoCambio,classeIdeale,classe,penalitaGomma,testoPrevisione,statoPista,aggiornaPrevisione,SLICK});
 
@@ -5232,7 +5234,7 @@ function tick(dt){
  const bersaglio=pioggiaAl(giro),diff=bersaglio-M.rain;
  M.rain+=Math.sign(diff)*Math.min(Math.abs(diff),.9*dl*SEGMENTS/10);
  if(M.rain>M.wet)M.wet=Math.min(1,M.wet+(M.rain-M.wet)*1.4*dl*SEGMENTS/10+.002*dl);
- else M.wet=Math.max(M.rain,M.wet-.24*dl);
+ else M.wet=Math.max(M.rain,M.wet-(.05+.32*(M.rain>.05?0:(M.sole??.5)))*dl);  // asciuga piu' in fretta col sole
  // Pioggia forte: la safety car diventa molto piu' probabile.
  if(M.rain>.75&&scState==="off"&&!M.scPioggia&&giro>1&&giro<circuit.laps-1.5){
    M.scPioggia=true;
@@ -6185,5 +6187,473 @@ renderTrack=function(){
 if($("homeVersione"))$("homeVersione").textContent="v1.6.0";
 })();
 </script>
+<script>
+// v1.7.0 - MERCATO PILOTI: i piloti invecchiano, migliorano, calano, si ritirano
+// e cambiano squadra. Chi perde il sedile per colpa tua non sparisce: finisce sul
+// mercato e innesca una catena di trasferimenti.
+(function(){
+const ETA_F1={antonelli:19,russell:28,leclerc:28,hamilton:41,norris:26,piastri:25,verstappen:28,hadjar:21,lawson:24,lindblad:18,
+ gasly:30,colapinto:22,ocon:29,bearman:20,hulkenberg:38,bortoleto:21,albon:30,sainz:31,alonso:44,stroll:27,perez:36,bottas:36};
+const NOMI=["Luca","Mateo","Noah","Elias","Theo","Jonas","Kenji","Rafael","Hugo","Leon","Diego","Oskar","Marco","Ayrton","Felix","Tomas","Ryo","Nils","Samuel","Enzo"];
+const COGNOMI=["Ferraro","Lindqvist","Duarte","Okafor","Moreau","Kowalski","Takeda","Silva","Novak","Brennan","Castell","Haugen","Ricci","Varga","Dubois","Stein","Mendes","Arai","Rossi","Kaur"];
+const STATS=["overtake","defend","cons","tyre","rain","start"];
+const rating=d=>d.cons*.42+d.tyre*.23+d.overtake*.18+d.defend*.17;
+const valoreTeam=(t,cat)=>{const T=CATEGORIE[cat].teams[t];if(!T)return 0;const s=(career.sviluppo||{})[t]||{};return (T.power+(s.power||0))*.45+(T.aero+(s.aero||0))*.55;};
+const copia=d=>JSON.parse(JSON.stringify(d));
+const nomeDi=id=>{for(const c of ["f1","f2"]){const d=(career.roster&&career.roster[c]||CATEGORIE[c].drivers).find(x=>x.id===id);if(d)return d.name;}return id;};
+
+function rosterIniziale(){
+ const st=career.stagione||1,r=rng("eta-"+(career.pilotaNome||""));
+ const R={f1:CATEGORIE.f1.drivers.map(copia),f2:CATEGORIE.f2.drivers.map(copia)};
+ R.f1.forEach(d=>d.eta=(ETA_F1[d.id]||27)+(st-1));
+ R.f2.forEach(d=>d.eta=18+Math.floor(r()*5));
+ // il pilota che oggi ha ceduto il sedile al giocatore e' gia' fuori squadra
+ const cat=career.categoria||"f2",sed=career.sedile;
+ const i=R[cat].findIndex(d=>d.id===sed);
+ const io=(drivers.find(d=>d.id==="player")||{}).team;
+ if(i>=0){const fuori=R[cat].splice(i,1)[0];R.liberi=[Object.assign(fuori,{cat})];}
+ R[cat].push({id:"__sedile",name:"(tu)",team:io||(i>=0?R.liberi[0].team:Object.keys(CATEGORIE[cat].teams)[0]),...Object.fromEntries(STATS.map(k=>[k,70])),eta:20});
+ return R;
+}
+function rng(seed){let h=2166136261;for(let i=0;i<seed.length;i++){h^=seed.charCodeAt(i);h=Math.imul(h,16777619);}
+ return ()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return ((h>>>0)%100000)/100000;};}
+function evolvi(d){
+ const e=d.eta,f=e<=23?[1,3]:e<=28?[0,1.2]:e<=32?[-.6,.6]:e<=35?[-1.4,0]:[-2.4,-.6];
+ STATS.forEach(k=>{d[k]=clamp(Math.round((d[k]+f[0]+Math.random()*(f[1]-f[0]))*10)/10,50,99);});
+}
+function probRitiro(d){
+ const e=d.eta;let p=e<34?0:e<36?.08:e<38?.2:e<40?.38:e<42?.62:1;
+ if(rating(d)>88)p*=.6;
+ return p;
+}
+function nuovoRookie(team,st,n){
+ const r=Math.random;
+ const d={id:`r${st}_${n}_${Math.floor(r()*1e5)}`,name:`${NOMI[Math.floor(r()*NOMI.length)]} ${COGNOMI[Math.floor(r()*COGNOMI.length)]}`,team,eta:18+Math.floor(r()*2)};
+ const base=60+r()*9;STATS.forEach(k=>d[k]=Math.round(base+(r()-.5)*6));
+ return d;
+}
+
+function eseguiMercato(o){
+ const st=career.stagione,news=[];
+ const primo=!career.roster,R=primo?rosterIniziale():copia(career.roster);
+ R.liberi=(R.liberi||[]).filter(d=>d.eta<38);
+ const vecchiaCat=career.categoria||"f2";
+ const ph=R[vecchiaCat].find(d=>d.id==="__sedile");
+ const vecchioTeam=ph?ph.team:null;
+ ["f1","f2"].forEach(c=>R[c]=R[c].filter(d=>d.id!=="__sedile"));
+ const vacanti=[];   // {cat,team,prima}
+ if(vecchioTeam)vacanti.push({cat:vecchiaCat,team:vecchioTeam,prima:"te"});
+
+ // 1. Un anno in piu': si cresce, si cala, qualcuno smette
+ [...R.f1,...R.f2,...R.liberi].forEach(d=>{d.eta=(d.eta||25)+1;evolvi(d);});
+ R.f1=R.f1.filter(d=>{
+   if(Math.random()<probRitiro(d)*(primo&&d.eta<42?.5:1)){news.push({t:"ritiro",txt:`${d.name} si ritira a ${d.eta} anni.`});vacanti.push({cat:"f1",team:d.team,prima:d.name});return false;}
+   return true;
+ });
+ R.liberi=R.liberi.filter(d=>{if(d.eta>=35&&Math.random()<.5){news.push({t:"ritiro",txt:`${d.name}, senza sedile, annuncia il ritiro.`});return false;}return true;});
+ const puntiF2=vecchiaCat==="f2"?career.punti:{};
+ const promuovibili=R.f2.slice().sort((a,b)=>((puntiF2[b.id]||0)-(puntiF2[a.id]||0))||rating(b)-rating(a));
+
+ // 2. Il tuo trasferimento: chi ti cede il posto finisce sul mercato
+ const dest=o.cat,teamDest=o.team||vecchioTeam;
+ if(o.sedile&&o.sedile!=="__sedile"){
+   const i=R[dest].findIndex(d=>d.id===o.sedile);
+   if(i>=0){
+     const x=R[dest].splice(i,1)[0];
+     R.liberi.push(Object.assign(x,{cat:dest}));
+     news.push({t:"tu",txt:`Firmi con ${CATEGORIE[dest].teams[teamDest].name}: ${x.name} perde il sedile.`});
+   }
+   if(vecchioTeam&&!(dest===vecchiaCat&&teamDest===vecchioTeam))news.push({t:"tu",txt:`Lasci ${CATEGORIE[vecchiaCat].teams[vecchioTeam].name}: il tuo posto è libero.`});
+ }else if(vecchioTeam&&dest===vecchiaCat){
+   vacanti.splice(vacanti.findIndex(v=>v.prima==="te"),1);
+ }
+ const st_=STATS.reduce((a,k)=>(a[k]=career.stats?career.stats[k]:70,a),{});
+ R[dest].push({id:"__sedile",name:"(tu)",team:teamDest,...st_,eta:20});
+ const vi=vacanti.findIndex(v=>v.cat===dest&&v.team===teamDest&&v.prima==="te");
+ if(vi>=0&&dest===vecchiaCat&&teamDest===vecchioTeam)vacanti.splice(vi,1);
+
+ // 3. Le squadre valutano i propri piloti: chi rende poco puo' essere sostituito
+ const migliorLibero=()=>Math.max(0,...R.liberi.filter(d=>d.cat!=="f2"||true).map(d=>rating(d)*(d.cat==="f2"?.92:1)),...promuovibili.slice(0,3).map(d=>rating(d)+6));
+ let tagli=0;
+ Object.keys(CATEGORIE.f1.teams).sort(()=>Math.random()-.5).forEach(t=>{
+   if(tagli>=3)return;
+   const ds=R.f1.filter(d=>d.team===t&&d.id!=="__sedile").sort((a,b)=>rating(a)-rating(b));
+   const d=ds[0];if(!d)return;
+   const pts=(vecchiaCat==="f1"?career.punti[d.id]:null);
+   const debole=rating(d)<migliorLibero()-3.5||(pts!=null&&pts<5&&Math.random()<.3);
+   if(debole&&Math.random()<.45){
+     R.f1.splice(R.f1.indexOf(d),1);R.liberi.push(Object.assign(d,{cat:"f1"}));
+     vacanti.push({cat:"f1",team:t,prima:d.name});tagli++;
+     news.push({t:"taglio",txt:`${CATEGORIE.f1.teams[t].name} non rinnova ${d.name}.`});
+   }
+ });
+
+ // 4. Catena dei trasferimenti in F1: scelgono prima le squadre piu' forti
+ const mossi=new Set();let giri=0;
+ const conta=t=>R.f1.filter(d=>d.team===t).length;
+ Object.keys(CATEGORIE.f1.teams).forEach(t=>{while(conta(t)+vacanti.filter(v=>v.cat==="f1"&&v.team===t).length<2)vacanti.push({cat:"f1",team:t,prima:null});});
+ while(giri++<60){
+   const v=vacanti.filter(x=>x.cat==="f1"&&conta(x.team)<2).sort((a,b)=>valoreTeam(b.team,"f1")-valoreTeam(a.team,"f1"))[0];
+   if(!v)break;
+   vacanti.splice(vacanti.indexOf(v),1);
+   const val=valoreTeam(v.team,"f1");
+   const punteggio=d=>rating(d)+(d.eta<=23?2:0)-(d.eta>=36?(d.eta-35)*1.2:0)+Math.random()*2;
+   const cand=[];
+   R.liberi.filter(d=>d.cat==="f1").forEach(d=>cand.push({d,da:"liberi",s:punteggio(d)}));
+   promuovibili.slice(0,4).forEach(d=>{if(!mossi.has(d.id))cand.push({d,da:"f2",s:punteggio(d)+8+2});});
+   R.f1.forEach(d=>{if(d.id!=="__sedile"&&d.team!==v.team&&!mossi.has(d.id)&&valoreTeam(d.team,"f1")<val-1.5&&Math.random()<.5)cand.push({d,da:"f1",s:punteggio(d)-1.5});});
+   cand.sort((a,b)=>b.s-a.s);
+   const c=cand[0];
+   const nomeT=CATEGORIE.f1.teams[v.team].name,motivo=v.prima&&v.prima!=="te"?` al posto di ${v.prima}`:v.prima==="te"?" sul sedile che hai lasciato":"";
+   if(!c){const r=nuovoRookie(v.team,st,giri);STATS.forEach(k=>r[k]+=8);R.f1.push(r);news.push({t:"rookie",txt:`${nomeT} fa debuttare il giovane ${r.name}${motivo}.`});continue;}
+   mossi.add(c.d.id);
+   if(c.da==="liberi"){R.liberi.splice(R.liberi.indexOf(c.d),1);delete c.d.cat;c.d.team=v.team;R.f1.push(c.d);news.push({t:"mercato",txt:`${c.d.name} firma con ${nomeT}${motivo}.`});}
+   else if(c.da==="f2"){
+     R.f2.splice(R.f2.indexOf(c.d),1);promuovibili.splice(promuovibili.indexOf(c.d),1);
+     const vecchio=c.d.team;c.d.team=v.team;STATS.forEach(k=>c.d[k]=clamp(c.d[k]+8,50,99));R.f1.push(c.d);
+     vacanti.push({cat:"f2",team:vecchio,prima:c.d.name});
+     news.push({t:"promozione",txt:`Dalla F2: ${c.d.name} promosso in ${nomeT}${motivo}.`});
+   }else{
+     const vecchio=c.d.team;c.d.team=v.team;
+     vacanti.push({cat:"f1",team:vecchio,prima:c.d.name});
+     news.push({t:"mercato",txt:`${c.d.name} lascia ${CATEGORIE.f1.teams[vecchio].name} per ${nomeT}${motivo}.`});
+   }
+ }
+ R.liberi.filter(d=>d.cat==="f1").forEach(d=>news.push({t:"libero",txt:`${d.name} resta senza sedile per la prossima stagione.`}));
+
+ // 5. F2: chi ha 25 anni o piu' esce, i posti vuoti vanno ai giovani
+ R.f2=R.f2.filter(d=>{if(d.id!=="__sedile"&&d.eta>=25&&Math.random()<.7){news.push({t:"f2",txt:`${d.name} lascia la F2.`});return false;}return true;});
+ R.liberi=R.liberi.filter(d=>d.cat!=="f2");
+ Object.keys(CATEGORIE.f2.teams).forEach((t,i)=>{
+   while(R.f2.filter(d=>d.team===t).length<2){const r=nuovoRookie(t,st,i*3+R.f2.length);R.f2.push(r);news.push({t:"f2",txt:`${r.name} debutta in F2 con ${CATEGORIE.f2.teams[t].name}.`});}
+ });
+ career.roster=R;
+ career.mercato={stagione:st+1,notizie:news};
+ return news;
+}
+
+// Le offerte devono indicare un pilota che oggi siede davvero in quella squadra
+const _gen=generaOfferte;
+generaOfferte=function(){
+ const r=_gen();
+ const R=career.roster;
+ r.off.forEach(o=>{
+   if(!o.sedile||!o.team)return;
+   const lista=(R&&R[o.cat])||(o.cat===(career.categoria||"f2")?drivers:CATEGORIE[o.cat].drivers);
+   const ds=lista.filter(d=>d.team===o.team&&d.id!=="player"&&d.id!=="__sedile");
+   if(!ds.some(d=>d.id===o.sedile)&&ds.length)o.sedile=ds.sort((a,b)=>rating(a)-rating(b))[0].id;
+   const x=ds.find(d=>d.id===o.sedile);
+   if(x)o.nota=(o.nota?o.nota+" ":"")+`Prenderesti il posto di ${x.name}.`;
+ });
+ return r;
+};
+
+let usaRoster=false;
+const _setCat=setCategoria;
+setCategoria=function(cat){
+ _setCat(cat);
+ if(usaRoster&&career&&career.roster&&career.roster[cat]){
+   drivers=career.roster[cat].map(d=>Object.assign({},d));
+   $("player").innerHTML=drivers.map(d=>`<option value="${d.id}">${d.name}</option>`).join("");
+ }
+};
+const _inst=installaPilota;
+installaPilota=function(...a){usaRoster=a[5]==="__sedile";try{_inst(...a);}finally{usaRoster=false;}};
+const _acc=accettaOfferta;
+accettaOfferta=function(o){
+ const news=eseguiMercato(o);
+ _acc(Object.assign({},o,{sedile:"__sedile"}));
+ gridOrder=null;createCars();setupTrack();render();
+ mostraMercato(news,career.stagione);
+};
+
+// Schermata notizie di mercato
+const box=document.createElement("div");box.id="mercato";box.setAttribute("data-testid","driver-market-sheet");
+box.innerHTML=`<div class="homeCard"><h2 id="mcTitolo">Mercato piloti</h2><p class="sub" id="mcSub"></p>
+ <div class="dgScroll" id="mcLista" data-testid="driver-market-list"></div>
+ <button id="mcChiudi" class="primario" data-testid="driver-market-close"><b>CONTINUA</b></button></div>`;
+document.body.appendChild(box);
+$("mcChiudi").onclick=()=>box.classList.remove("on");
+const ETICHETTA={ritiro:"RITIRO",tu:"TU",taglio:"TAGLIO",mercato:"FIRMA",promozione:"PROMOSSO",rookie:"ROOKIE",libero:"LIBERO",f2:"F2"};
+function mostraMercato(news,stag){
+ $("mcTitolo").textContent=`Mercato piloti · Stagione ${stag}`;
+ $("mcSub").textContent=`${news.filter(n=>n.t!=="f2").length} movimenti in F1, ${news.filter(n=>n.t==="f2").length} in F2.`;
+ const ord=["tu","ritiro","taglio","mercato","promozione","rookie","libero","f2"];
+ $("mcLista").innerHTML=news.slice().sort((a,b)=>ord.indexOf(a.t)-ord.indexOf(b.t)).map(n=>`<div class="mcItem ${n.t}" data-testid="market-news-${n.t}"><span>${ETICHETTA[n.t]}</span><p>${n.txt}</p></div>`).join("")||'<div class="small">Nessun movimento.</div>';
+ box.classList.add("on");
+}
+const btn=document.createElement("button");btn.id="mercatoBtn";btn.textContent="MERCATO PILOTI";btn.setAttribute("data-testid","career-market-button");
+$("careerSecondari").appendChild(btn);
+btn.onclick=()=>{
+ if(career&&career.mercato)mostraMercato(career.mercato.notizie,career.mercato.stagione);
+ else{mostraMercato([],career?career.stagione:1);$("mcSub").textContent="Il mercato apre a fine stagione, quando scegli la prossima squadra.";}
+};
+// eta' e stato nella scheda: chi e' sul mercato si vede anche in classifica
+window.MERCATO={esegui:eseguiMercato,mostra:mostraMercato,rating};
+})();
+</script>
+<script>
+// v1.7.0 - GRAFICA GARA: pista orizzontale inclinata (vista 3D), informazioni
+// agli angoli, boost ridisegnato in basso a destra.
+(function(){
+const M=window.METEO;
+const V3D_STORE="f1Vista3d_v170";
+if(!CHIAVI_SALVATAGGIO.includes(V3D_STORE))CHIAVI_SALVATAGGIO.push(V3D_STORE);
+const vista3d=()=>{try{return localStorage.getItem(V3D_STORE)!=="0";}catch(e){return true;}};
+document.body.classList.toggle("vista3d",vista3d());
+document.body.classList.add("hudTV");
+
+// Contenitore: la pista si inclina, gli angoli restano dritti e leggibili.
+const wrap=$("trackWrap"),box=document.createElement("div");box.id="pistaBox";
+wrap.parentNode.insertBefore(box,wrap);box.appendChild(wrap);
+["pioggiaFx","radioBanner"].forEach(id=>{const e=$(id);if(e)box.appendChild(e);});
+box.insertAdjacentHTML("beforeend",`
+ <div class="ha" id="haPos" data-testid="hud-position"><b id="haPosN">-</b><span id="haPosT">/-</span></div>
+ <div class="ha" id="haGiro" data-testid="hud-lap"><span>GIRO</span><b id="haGiroN">-</b><i id="haSC"></i></div>
+ <div class="ha" id="haMeteo" data-testid="hud-weather-corner"><b id="haMeteoA">-</b><span id="haMeteoB">-</span></div>
+ <div class="ha" id="haGap" data-testid="hud-gap"><div id="haGapA"></div><div id="haGapD"></div><div id="haGomma"></div></div>
+ <div class="ha" id="haBoost" data-testid="hud-boost"></div>`);
+const hb=$("haBoost");hb.appendChild($("assistBtn"));hb.appendChild($("boost"));
+$("boost").setAttribute("data-testid","boost-button");
+$("boost").insertAdjacentHTML("beforebegin",'<div id="haEnBox"><span>ENERGIA</span><b id="haEn" data-testid="hud-energy">-</b><div class="haEnBar"><i id="haEnBar"></i></div></div>');
+
+// Coordinate delle vetture: con la pista inclinata in 3D la matrice "a schermo"
+// non e' affidabile. Si usa quella locale del riquadro, cosi' puntini e pista
+// ruotano insieme e restano allineati.
+const nativo=SVGGraphicsElement.prototype.getScreenCTM;
+SVGGraphicsElement.prototype.getScreenCTM=function(){
+ if(!document.body.classList.contains("vista3d")||!this.ownerSVGElement||this.ownerSVGElement.id!=="trackSvg")return nativo.call(this);
+ const ctm=this.getCTM();if(!ctm)return nativo.call(this);
+ const r=wrap.getBoundingClientRect();
+ return new DOMMatrix([1,0,0,1,r.left+wrap.clientLeft,r.top+wrap.clientTop]).multiply(ctm);
+};
+
+// Pista sempre in orizzontale quando la vista 3D e' attiva
+function altezza3D(){
+ const p=vbIntera.split(" ").map(Number),asp=(p[2]>0&&p[3]>0)?p[2]/p[3]:1.7;
+ const W=box.clientWidth||wrap.clientWidth||360;
+ const H=Math.round(clamp(W/asp*1.1,W*.64,W*.95));
+ wrap.style.height=H+"px";
+ box.style.height=Math.round(H*.82+70)+"px";
+ wrap.style.top=Math.round(44-H*.09)+"px";
+}
+const _inq=inquadraPista;
+inquadraPista=function(){
+ if(!vista3d()){box.style.height="";wrap.style.top="";return _inq();}
+ const g=$("trackRot");if(!g)return _inq();
+ g.removeAttribute("transform");g.querySelectorAll("text").forEach(t=>t.removeAttribute("transform"));
+ calcolaVistaIntera();
+ const p=vbIntera.split(" ").map(Number),w=p[2],h=p[3];if(!(w>0&&h>0))return;
+ const cx=p[0]+w/2,cy=p[1]+h/2;
+ pistaRuotata=h>w*1.05;
+ if(pistaRuotata){
+   g.setAttribute("transform",`rotate(-90 ${cx.toFixed(1)} ${cy.toFixed(1)})`);
+   g.querySelectorAll("text").forEach(t=>{const x=t.getAttribute("x"),y=t.getAttribute("y");if(x!=null&&y!=null)t.setAttribute("transform",`rotate(90 ${x} ${y})`);});
+   vbIntera=`${(cx-h/2).toFixed(1)} ${(cy-w/2).toFixed(1)} ${h.toFixed(1)} ${w.toFixed(1)}`;
+ }
+ altezza3D();
+ if(!camVicina)aggiornaCamera();
+};
+const _cam3=aggiornaCamera;
+aggiornaCamera=function(){
+ _cam3();
+ const svg=$("trackSvg");
+ svg.setAttribute("preserveAspectRatio","xMidYMid meet");
+ if(camVicina&&vista3d()&&wrap.clientHeight>0){
+   // in 3D il rettangolo a schermo e' schiacciato: l'aspetto va preso dalle misure vere
+   const [x,y,w,h]=svg.getAttribute("viewBox").split(" ").map(Number),cx=x+w/2,cy=y+h/2,H=w*wrap.clientHeight/wrap.clientWidth;
+   svg.setAttribute("viewBox",`${x.toFixed(1)} ${(cy-H/2).toFixed(1)} ${w.toFixed(1)} ${H.toFixed(1)}`);
+ }
+};
+const _ad=adattaAltezzaPista;
+adattaAltezzaPista=function(){if(vista3d())altezza3D();else _ad();};
+
+// Angoli
+const NOMI_G={soft:"S",medium:"M",hard:"H",inter:"I",wet:"W"};
+const sigla=c=>(c.name.split(" ").pop()||c.name).slice(0,3).toUpperCase();
+function angoli(){
+ const vis=(running||startPrepared||raceEnded)&&!qRunning;
+ box.classList.toggle("haOn",vis);
+ const pc=playerCar();if(!pc||!vis)return;
+ const o=order(),i=o.indexOf(pc);
+ $("haPosN").textContent=pc.retired?"RIT":"P"+(i+1);$("haPosT").textContent="/"+o.length;
+ $("haGiroN").textContent=`${Math.min(pc.completedLaps+1,circuit.laps)}/${circuit.laps}`;
+ const sc=scState==="pending"||scState==="catchup"||scState==="active"?"SAFETY CAR":scState==="restart"?"RIPARTENZA":"";
+ $("haSC").textContent=sc;$("haGiro").classList.toggle("sc",!!sc);
+ const r=M.rain,w=M.wet;
+ $("haMeteoA").textContent=r<.05?(w<.08?"Asciutto":"Non piove"):r<.45?`Pioggia leggera ${Math.round(r*100)}%`:`Pioggia ${Math.round(r*100)}%`;
+ const sole=r>.05?"nuvoloso":M.sole>.7?"sole forte":M.sole>.35?"sole debole":"coperto";
+ $("haMeteoB").textContent=`Pista ${Math.round(w*100)}% bagnata · ${sole}`;
+ $("haMeteo").classList.toggle("bagnato",w>=.18);
+ const av=i>0?o[i-1]:null,di=i<o.length-1?o[i+1]:null;
+ $("haGapA").innerHTML=av?`<b>+${gapSec(av,pc).toFixed(1)}</b><span>${sigla(av)}</span>`:`<b>LEADER</b>`;
+ $("haGapD").innerHTML=di&&!di.retired?`<b>−${gapSec(pc,di).toFixed(1)}</b><span>${sigla(di)}</span>`:"";
+ $("haGomma").innerHTML=`<i class="g ${pc.comp}">${NOMI_G[pc.comp]||"?"}</i>${Math.round(pc.tyreWear)}%`;
+ const en=clamp(pc.energy,0,100);
+ $("boost").style.setProperty("--en",Math.round(en));$("haEn").textContent=Math.floor(en);$("haEnBar").style.width=en+"%";
+ $("boost").classList.toggle("scarico",en<8);
+}
+const _hud=hudRefresh;hudRefresh=function(){_hud();angoli();};
+setInterval(angoli,500);
+
+// Impostazioni: vista 3D attivabile
+const set=document.querySelector("#impostazioni .homeCard");
+const riga=document.createElement("div");riga.className="setRow";
+riga.innerHTML=`<div><b>Vista 3D della pista</b><div class="small">Tracciato in orizzontale, inclinato come visto dalla tribuna.</div></div><button id="setV3d" data-testid="settings-3d-toggle"></button>`;
+set.insertBefore(riga,set.querySelector(".setRow"));
+function v3dBtn(){$("setV3d").textContent=vista3d()?"ON":"OFF";$("setV3d").classList.toggle("on",vista3d());}
+v3dBtn();
+$("setV3d").onclick=()=>{
+ try{localStorage.setItem(V3D_STORE,vista3d()?"0":"1");}catch(e){}
+ document.body.classList.toggle("vista3d",vista3d());wrap.style.height="";
+ v3dBtn();inquadraPista();render();
+};
+addEventListener("resize",()=>{if(vista3d())setTimeout(()=>{inquadraPista();render();},60);});
+try{inquadraPista();render();}catch(e){}
+})();
+</script>
+<script>
+// v1.7.0 - REPLAY DEL MIGLIOR SORPASSO: la gara viene registrata (posizioni ogni
+// 0,2 s), i tuoi sorpassi in pista vengono riconosciuti e il migliore si rivede
+// a fine gara, al rallentatore nel momento chiave.
+(function(){
+const REC={t:[],car:{},passi:[],attesa:[],rel:{},tUlt:-9,clock:0,migliore:null};
+window.REPLAY=REC;
+function reset(){REC.t=[];REC.car={};REC.passi=[];REC.attesa=[];REC.rel={};REC.tUlt=-9;REC.migliore=null;REC.duello={};}
+reset();
+const neutro=()=>["pending","catchup","active","restart"].includes(scState);
+function registra(){
+ if(aiSimulationMode)return;
+ if(raceClock<REC.clock-1)reset();
+ REC.clock=raceClock;
+ if(raceClock-REC.tUlt<.2)return;
+ REC.tUlt=raceClock;REC.t.push(raceClock);
+ for(const c of cars){
+   const r=REC.car[c.id]||(REC.car[c.id]={d:[],l:[],p:[]});
+   r.d.push(+totalDist(c).toFixed(5));r.l.push(+(c.lat||0).toFixed(2));r.p.push(c.inPit?1:0);
+ }
+ const pc=playerCar();if(!pc||pc.finished||pc.retired)return;
+ const o=order();
+ for(const x of cars){
+   if(x===pc)continue;
+   const rel=totalDist(pc)-totalDist(x),prima=REC.rel[x.id];
+   REC.rel[x.id]=rel;
+   const vicino=Math.abs(rel)*circuit.baseLap<1.2;
+   if(vicino&&!pc.inPit&&!x.inPit)REC.duello[x.id]=(REC.duello[x.id]||0)+.2;else if(!vicino)REC.duello[x.id]=0;
+   if(prima==null||prima>=0||rel<0)continue;
+   if(pc.inPit||x.inPit||x.finished||x.retired||neutro()||Math.abs(rel)>.05)continue;
+   if(x.spinUntil&&raceClock<x.spinUntil+1)continue;
+   REC.attesa.push({t:raceClock,vittima:x.id,nome:x.name,giro:pc.completedLaps+1,pos:o.indexOf(pc)+1,duello:REC.duello[x.id]||0});
+ }
+ // un sorpasso conta se dopo 3 secondi sei ancora davanti
+ REC.attesa=REC.attesa.filter(a=>{
+   if(raceClock-a.t<3)return true;
+   const x=cars.find(c=>c.id===a.vittima);
+   if(x&&!x.retired&&totalDist(pc)>totalDist(x)){
+     a.punti=(24-a.pos)*1.4+(a.pos===1?10:0)+Math.min(8,a.duello*.8)+(a.giro>=circuit.laps-1?4:0);
+     REC.passi.push(a);
+     if(!REC.migliore||a.punti>=REC.migliore.punti)REC.migliore=a;
+   }
+   return false;
+ });
+}
+const _upd=update;
+update=function(dt){_upd(dt);if(running||raceEnded)registra();};
+
+// ---- Riproduzione
+const SVG_CAR=`<g id="rpAuto"><rect x="-57" y="-25" width="22" height="12" rx="3" fill="#0b0d12"/><rect x="-57" y="13" width="22" height="12" rx="3" fill="#0b0d12"/>
+ <rect x="29" y="-22" width="18" height="10" rx="3" fill="#0b0d12"/><rect x="29" y="12" width="18" height="10" rx="3" fill="#0b0d12"/>
+ <rect x="-73" y="-21" width="12" height="42" rx="2" style="fill:var(--c2)"/>
+ <path d="M-61 -6H-35L-23 -12H17L37 -4H65L72 0L65 4H37L17 12H-23L-35 6H-61Z" style="fill:var(--c1)"/>
+ <path d="M-61 -2H-23L-15 -3H43L72 -1V1L43 3H-15L-23 2H-61Z" style="fill:var(--c2)"/>
+ <rect x="59" y="-19" width="11" height="38" rx="2" style="fill:var(--c2)"/><ellipse cx="3" cy="0" rx="9" ry="5" fill="#0b0d12"/></g>`;
+function campione(id,t){
+ const r=REC.car[id];if(!r)return null;
+ let i=REC.t.findIndex(x=>x>=t);if(i<0)i=REC.t.length-1;if(i===0)return {d:r.d[0],l:r.l[0],p:r.p[0]};
+ const t0=REC.t[i-1],t1=REC.t[i],k=t1>t0?(t-t0)/(t1-t0):0;
+ return {d:r.d[i-1]+(r.d[i]-r.d[i-1])*k,l:r.l[i-1]+(r.l[i]-r.l[i-1])*k,p:r.p[i]};
+}
+let anim=null;
+function ferma(){if(anim){cancelAnimationFrame(anim);anim=null;}}
+function avvia(host){
+ ferma();
+ const b=REC.migliore;if(!b||!host)return false;
+ const path=$("trackPath"),len=path.getTotalLength(),mpu=metriPerUnita();
+ const rot=$("trackRot").getAttribute("transform")||"";
+ const io=$("player").value,colori={};
+ const k=window.CASCO?window.CASCO.leggi():null;
+ cars.forEach(c=>colori[c.id]=c.id===io&&k&&k.livrea!==false?[k.c1,k.c2]:[coloreSquadra(c.team),"rgba(10,12,18,.55)"]);
+ host.innerHTML=`<div class="rpScena"><svg viewBox="0 0 100 60" preserveAspectRatio="xMidYMid slice" data-testid="replay-svg"><defs>${SVG_CAR}</defs>
+  <g transform="${rot}"><path d="${path.getAttribute("d")}" class="rpBordo"/><path d="${path.getAttribute("d")}" class="rpPista"/><g class="rpAuto"></g></g></svg></div>
+  <div class="rpInfo"><b>REPLAY</b> · Giro ${b.giro} · sorpasso su <b>${b.nome}</b> · P${b.pos+1} → P${b.pos}</div><div class="rpBar"><i></i></div>`;
+ const svg=host.querySelector("svg"),gAuto=host.querySelector(".rpAuto"),barra=host.querySelector(".rpBar i");
+ svg.querySelectorAll("path").forEach(p=>p.style.strokeWidth=(13/mpu).toFixed(2));
+ svg.querySelector(".rpBordo").style.strokeWidth=(17/mpu).toFixed(2);svg.querySelector(".rpBordo").style.strokeDasharray=`${(3/mpu).toFixed(3)} ${(3/mpu).toFixed(3)}`;
+ const m=$("trackRot").transform.baseVal.consolidate(),mat=m?m.matrix:new DOMMatrix();
+ const t0=Math.max(REC.t[0]||0,b.t-4.5),t1=Math.min(REC.t[REC.t.length-1]||b.t,b.t+3.5);
+ const lungh=5.6*2.1/mpu,larg=160/mpu;
+ let tt=t0,ult=performance.now();
+ const passo=Math.max(.0008,4/(circuit.lengthKm*1000));
+ function punto(d,l){
+   const f=((d%1)+1)%1,p0=path.getPointAtLength(len*layoutFrac(f)),n=trackNormal(path,f),q=path.getPointAtLength(len*layoutFrac((f+passo)%1));
+   return {x:p0.x+n.x*l/mpu,y:p0.y+n.y*l/mpu,a:Math.atan2(q.y-p0.y,q.x-p0.x)*180/Math.PI};
+ }
+ function frame(now){
+   const dt=Math.min(.05,(now-ult)/1000);ult=now;
+   const lento=Math.abs(tt-b.t)<1.2?.3:.75;
+   tt+=dt*lento;
+   if(tt>t1+.8)tt=t0;
+   const t=Math.min(tt,t1),me=campione(io,t);
+   if(me){
+     const pm=punto(me.d,me.l),c=new DOMPoint(pm.x,pm.y).matrixTransform(mat);
+     const H=larg*.6;svg.setAttribute("viewBox",`${(c.x-larg/2).toFixed(2)} ${(c.y-H/2).toFixed(2)} ${larg.toFixed(2)} ${H.toFixed(2)}`);
+     let html="";
+     for(const car of cars){
+       const s=campione(car.id,t);if(!s||s.p)continue;
+       if(Math.abs(s.d-me.d)*circuit.lengthKm*1000>260)continue;
+       const p=punto(s.d,s.l),[c1,c2]=colori[car.id];
+       const cls=car.id===io?"mio":car.id===b.vittima?"vittima":"";
+       html+=`<g class="${cls}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)}) rotate(${p.a.toFixed(1)}) scale(${(lungh/145).toFixed(4)})" style="--c1:${c1};--c2:${c2}"><use href="#rpAuto"/></g>`;
+     }
+     gAuto.innerHTML=html;
+   }
+   barra.style.width=((t-t0)/Math.max(.1,t1-t0)*100).toFixed(1)+"%";
+   anim=requestAnimationFrame(frame);
+ }
+ anim=requestAnimationFrame(frame);
+ return true;
+}
+window.REPLAY.avvia=avvia;window.REPLAY.ferma=ferma;
+
+// Dopo gara (carriera): riquadro sopra la classifica
+const rp=document.createElement("div");rp.id="rpBox";rp.setAttribute("data-testid","replay-box");
+$("dgPag1").insertAdjacentElement("beforebegin",rp);
+new MutationObserver(()=>{
+ const on=$("dopoGara").classList.contains("on");
+ if(on&&REC.migliore){rp.style.display="";avvia(rp);}else{rp.style.display="none";if(!on)ferma();}
+}).observe($("dopoGara"),{attributes:true,attributeFilter:["class"]});
+$("dgAvanti").addEventListener("click",()=>{if(!$("dgPag1").offsetParent){rp.style.display="none";ferma();}});
+$("dgIndietro").addEventListener("click",()=>{if($("dgPag1").offsetParent&&REC.migliore){rp.style.display="";avvia(rp);}});
+
+// Gara libera: pulsante a fine gara
+const sheet=document.createElement("div");sheet.id="replaySheet";sheet.setAttribute("data-testid","replay-sheet");
+sheet.innerHTML=`<div class="homeCard"><h2>Miglior sorpasso</h2><div id="rpLibero"></div><button id="rpChiudi" class="primario" data-testid="replay-close"><b>CHIUDI</b></button></div>`;
+document.body.appendChild(sheet);
+$("rpChiudi").onclick=()=>{sheet.classList.remove("on");ferma();};
+const bt=document.createElement("button");bt.id="replayBtn";bt.textContent="REPLAY SORPASSO";bt.setAttribute("data-testid","replay-open-button");
+$("ctaRow").appendChild(bt);
+bt.onclick=()=>{sheet.classList.add("on");avvia($("rpLibero"));};
+setInterval(()=>{bt.style.display=raceEnded&&!running&&REC.migliore&&gameMode!=="career"?"":"none";},700);
+})();
+</script>
+<script>
+// Il replay si raggiunge anche dal podio, senza doverlo prima chiudere
+(function(){
+const b=document.createElement("button");b.id="pdReplay";b.textContent="RIVEDI IL SORPASSO";b.setAttribute("data-testid","podium-replay-button");
+$("pdContinua").insertAdjacentElement("beforebegin",b);
+b.onclick=()=>{$("replaySheet").classList.add("on");window.REPLAY.avvia($("rpLibero"));};
+new MutationObserver(()=>{b.style.display=$("podio").classList.contains("on")&&window.REPLAY.migliore?"":"none";}).observe($("podio"),{attributes:true,attributeFilter:["class"]});
+})();
+if($("homeVersione"))$("homeVersione").textContent="v1.7.0";</script>
 </body>
 </html>
