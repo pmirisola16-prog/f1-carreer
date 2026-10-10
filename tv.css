@@ -330,3 +330,31 @@ body:not(.vista3d) #pistaBox{background:none;border:0;overflow:visible}
 #pistaBox #radioBanner .rBtns button{min-height:36px;font-size:13px}
 #pdReplay{width:100%;min-height:44px;margin-top:12px}
 #replaySheet{z-index:98}
+
+/* v1.8.0 - Angoli ridisposti */
+#haPos{flex-direction:column;align-items:flex-start;gap:1px;padding:4px 10px 5px 8px}
+#haPos .hpRiga{display:flex;align-items:baseline;gap:2px}
+#haPos #haGapA,#haPos #haGapD{display:flex;gap:6px;align-items:baseline}
+#haPos #haGapA b,#haPos #haGapD b{font-family:var(--f-num);font-size:13px}
+#haPos #haGapA span,#haPos #haGapD span{font-size:10px;color:var(--muted);letter-spacing:.06em}
+#haPos #haGapA b{color:#ff8a8a}#haPos #haGapD b{color:#7dffb3}
+#haPos #haGapD:empty{display:none}
+#haGiro{min-width:64px}
+#haMeteo{max-width:34%;padding:3px 7px}
+#haMeteo b{font-size:11px;letter-spacing:.06em}
+#haMeteo span{font-size:9.5px;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#haGommaBox{left:8px;bottom:8px;background:rgba(7,8,11,.8);padding:6px 10px 6px 7px;border-radius:4px}
+#haGommaBox #haGomma{display:flex;align-items:center;gap:8px;font-family:var(--f-head)}
+#haGommaBox .g{font-style:normal;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:5px solid #eaeaea;background:#111;
+ font-family:var(--f-head);font-weight:800;font-size:17px;box-shadow:inset 0 0 0 2px #2b2f38}
+#haGommaBox .g.soft{border-color:#ff3b3b}#haGommaBox .g.medium{border-color:#ffd400}#haGommaBox .g.hard{border-color:#eaeaea}
+#haGommaBox .g.inter{border-color:#3ddc5b}#haGommaBox .g.wet{border-color:#2f8bff}
+#haGommaBox b{display:block;font-family:var(--f-num);font-size:22px;line-height:1}
+#haGommaBox b.alta{color:#ffb020}#haGommaBox b.crit{color:#ff4d4d;animation:boxBox .7s infinite alternate}
+#haGommaBox span{display:block;font-size:9px;letter-spacing:.16em;color:var(--muted)}
+#haGommaBox .gBar{width:62px;height:4px;background:#232a38;border-radius:3px;margin-top:3px;overflow:hidden}
+#haGommaBox .gBar i{display:block;height:100%;background:linear-gradient(90deg,#ff4d4d,#ffd400 40%,#00d26a)}
+#pistaBox.haOn #haGommaBox{display:flex}
+#pistaBox #radioBanner{top:84px;left:16%;right:16%}
+#haBoost #assistBtn{position:absolute;right:0;bottom:78px}
+@media(max-width:400px){#haBoost #assistBtn{bottom:70px}}

@@ -5280,8 +5280,8 @@ function refreshUi(){
  pill.className="pill meteo "+p.tipo;
  pill.innerHTML=ICONA[p.tipo]+" "+(p.tipo==="asciutto"?"ASCIUTTO":p.tipo==="pioggia"?"PIOGGIA":"VARIABILE");
  prevBox.innerHTML=`<span class="lbl">PREVISIONI</span> ${ICONA[p.tipo]} <b>${testoPrevisione(p)}</b>`;
- prevBox.style.display=running?"none":"";
- const qb=$("qualiBtn");if(qb)qb.style.display=running?"none":"";
+ prevBox.style.display=running||startPrepared?"none":"";
+ const qb=$("qualiBtn");if(qb)qb.style.display=running||startPrepared?"none":"";
  const h=$("hMeteo");if(h)h.textContent=statoPista();
  cella.classList.toggle("bagnato",M.wet>=.18);
  const inQ=$("quali").classList.contains("on")&&!running;
@@ -6481,14 +6481,10 @@ function angoli(){
  const sc=scState==="pending"||scState==="catchup"||scState==="active"?"SAFETY CAR":scState==="restart"?"RIPARTENZA":"";
  $("haSC").textContent=sc;$("haGiro").classList.toggle("sc",!!sc);
  const r=M.rain,w=M.wet;
- $("haMeteoA").textContent=r<.05?(w<.08?"Asciutto":"Non piove"):r<.45?`Pioggia leggera ${Math.round(r*100)}%`:`Pioggia ${Math.round(r*100)}%`;
- const sole=r>.05?"nuvoloso":M.sole>.7?"sole forte":M.sole>.35?"sole debole":"coperto";
- $("haMeteoB").textContent=`Pista ${Math.round(w*100)}% bagnata · ${sole}`;
  $("haMeteo").classList.toggle("bagnato",w>=.18);
  const av=i>0?o[i-1]:null,di=i<o.length-1?o[i+1]:null;
  $("haGapA").innerHTML=av?`<b>+${gapSec(av,pc).toFixed(1)}</b><span>${sigla(av)}</span>`:`<b>LEADER</b>`;
  $("haGapD").innerHTML=di&&!di.retired?`<b>−${gapSec(pc,di).toFixed(1)}</b><span>${sigla(di)}</span>`:"";
- $("haGomma").innerHTML=`<i class="g ${pc.comp}">${NOMI_G[pc.comp]||"?"}</i>${Math.round(pc.tyreWear)}%`;
  const en=clamp(pc.energy,0,100);
  $("boost").style.setProperty("--en",Math.round(en));$("haEn").textContent=Math.floor(en);$("haEnBar").style.width=en+"%";
  $("boost").classList.toggle("scarico",en<8);
@@ -6513,147 +6509,79 @@ try{inquadraPista();render();}catch(e){}
 })();
 </script>
 <script>
-// v1.7.0 - REPLAY DEL MIGLIOR SORPASSO: la gara viene registrata (posizioni ogni
-// 0,2 s), i tuoi sorpassi in pista vengono riconosciuti e il migliore si rivede
-// a fine gara, al rallentatore nel momento chiave.
+if($("homeVersione"))$("homeVersione").textContent="v1.7.0";</script>
+<script>
+// v1.8.0 - Pit lane corrette e angoli della gara ridisposti.
 (function(){
-const REC={t:[],car:{},passi:[],attesa:[],rel:{},tUlt:-9,clock:0,migliore:null};
-window.REPLAY=REC;
-function reset(){REC.t=[];REC.car={};REC.passi=[];REC.attesa=[];REC.rel={};REC.tUlt=-9;REC.migliore=null;REC.duello={};}
-reset();
-const neutro=()=>["pending","catchup","active","restart"].includes(scState);
-function registra(){
- if(aiSimulationMode)return;
- if(raceClock<REC.clock-1)reset();
- REC.clock=raceClock;
- if(raceClock-REC.tUlt<.2)return;
- REC.tUlt=raceClock;REC.t.push(raceClock);
- for(const c of cars){
-   const r=REC.car[c.id]||(REC.car[c.id]={d:[],l:[],p:[]});
-   r.d.push(+totalDist(c).toFixed(5));r.l.push(+(c.lat||0).toFixed(2));r.p.push(c.inPit?1:0);
+// --- PIT LANE: alcune polilinee OSM non combaciano con i punti in cui le
+// vetture lasciano la pista (Zandvoort spostata di ~400 m, Lusail di ~160 m) o
+// restano staccate dal tracciato (Albert Park, Barcellona). Si controllano al
+// caricamento del circuito e si correggono senza toccare i dati originali.
+const _ppf=pitPathFor,_pg=pitGeometry;
+let fixKey="",fix=null;
+const sp=x=>((x%1)+1)%1,diff=(a,b)=>sp(a-b+.5)-.5;
+function calcola(){
+ const path=$("trackPath");if(!path)return null;
+ const key=circuit.id+"|"+(path.getAttribute("d")||"").length;
+ if(key===fixKey)return fix;
+ fixKey=key;fix=null;
+ if(pitPathUser[circuit.id]||pitGeoUser[circuit.id]||pitOffsetMode[circuit.id])return null;
+ const raw=_ppf();if(!raw||raw.length<2)return null;
+ const N=900,tr=[];for(let i=0;i<N;i++){const p=trackPoint(path,i/N);tr.push([p.x,p.y,i/N]);}
+ const vicino=(x,y)=>{let b=1e9,f=0;for(const t of tr){const d=Math.hypot(t[0]-x,t[1]-y);if(d<b){b=d;f=t[2];}}return {d:b,f};};
+ const g=_pg(),a=vicino(raw[0][0],raw[0][1]),z=vicino(raw[raw.length-1][0],raw[raw.length-1][1]);
+ const dE=diff(a.f,g.entryFrac),dX=diff(z.f,g.exitFrac);
+ const rep={id:circuit.id,spostamento:Math.round(Math.max(Math.abs(dE),Math.abs(dX))*circuit.lengthKm*1000),staccata:+Math.max(a.d,z.d).toFixed(1)};
+ if(Math.max(Math.abs(dE),Math.abs(dX))>.04){
+   // tracciato OSM fuori posto: corsia parallela al rettilineo, dal lato giusto
+   const m=raw[Math.floor(raw.length/2)],vm=vicino(m[0],m[1]),tp=trackPoint(path,vm.f),n=trackNormal(path,vm.f);
+   const lato=((m[0]-tp.x)*n.x+(m[1]-tp.y)*n.y)>=0?1:-1;
+   fix={mode:"offset",g:{side:lato,entryOffset:0,laneOffset:24,exitOffset:0},rep:Object.assign(rep,{cura:"corsia ricostruita"})};
+ }else{
+   const pts=raw.map(p=>[p[0],p[1]]);
+   const e=trackPoint(path,g.entryFrac),x=trackPoint(path,g.exitFrac);
+   if(Math.abs(dE)>.004||a.d>1.5)pts.unshift([+e.x.toFixed(1),+e.y.toFixed(1)]);
+   if(Math.abs(dX)>.004||z.d>1.5)pts.push([+x.x.toFixed(1),+x.y.toFixed(1)]);
+   fix={mode:"poly",pts,rep:Object.assign(rep,{cura:pts.length>raw.length?"estremi collegati alla pista":"ok"})};
  }
- const pc=playerCar();if(!pc||pc.finished||pc.retired)return;
- const o=order();
- for(const x of cars){
-   if(x===pc)continue;
-   const rel=totalDist(pc)-totalDist(x),prima=REC.rel[x.id];
-   REC.rel[x.id]=rel;
-   const vicino=Math.abs(rel)*circuit.baseLap<1.2;
-   if(vicino&&!pc.inPit&&!x.inPit)REC.duello[x.id]=(REC.duello[x.id]||0)+.2;else if(!vicino)REC.duello[x.id]=0;
-   if(prima==null||prima>=0||rel<0)continue;
-   if(pc.inPit||x.inPit||x.finished||x.retired||neutro()||Math.abs(rel)>.05)continue;
-   if(x.spinUntil&&raceClock<x.spinUntil+1)continue;
-   REC.attesa.push({t:raceClock,vittima:x.id,nome:x.name,giro:pc.completedLaps+1,pos:o.indexOf(pc)+1,duello:REC.duello[x.id]||0});
- }
- // un sorpasso conta se dopo 3 secondi sei ancora davanti
- REC.attesa=REC.attesa.filter(a=>{
-   if(raceClock-a.t<3)return true;
-   const x=cars.find(c=>c.id===a.vittima);
-   if(x&&!x.retired&&totalDist(pc)>totalDist(x)){
-     a.punti=(24-a.pos)*1.4+(a.pos===1?10:0)+Math.min(8,a.duello*.8)+(a.giro>=circuit.laps-1?4:0);
-     REC.passi.push(a);
-     if(!REC.migliore||a.punti>=REC.migliore.punti)REC.migliore=a;
-   }
-   return false;
- });
+ return fix;
 }
-const _upd=update;
-update=function(dt){_upd(dt);if(running||raceEnded)registra();};
+pitPathFor=function(id){
+ if(id&&id!==circuit.id)return _ppf(id);
+ const f=calcola();if(!f)return _ppf(id);
+ return f.mode==="offset"?null:f.pts;
+};
+pitGeometry=function(){
+ const g=_pg(),f=calcola();
+ return f&&f.mode==="offset"?Object.assign({},g,f.g):g;
+};
+window.PIT_FIX={stato:()=>calcola()};
+// la corsia disegnata va ricostruita con la geometria corretta
+const _setup=setupTrack;
+setupTrack=function(...a){fixKey="";return _setup(...a);};
+try{fixKey="";setupTrack();render();}catch(e){}
 
-// ---- Riproduzione
-const SVG_CAR=`<g id="rpAuto"><rect x="-57" y="-25" width="22" height="12" rx="3" fill="#0b0d12"/><rect x="-57" y="13" width="22" height="12" rx="3" fill="#0b0d12"/>
- <rect x="29" y="-22" width="18" height="10" rx="3" fill="#0b0d12"/><rect x="29" y="12" width="18" height="10" rx="3" fill="#0b0d12"/>
- <rect x="-73" y="-21" width="12" height="42" rx="2" style="fill:var(--c2)"/>
- <path d="M-61 -6H-35L-23 -12H17L37 -4H65L72 0L65 4H37L17 12H-23L-35 6H-61Z" style="fill:var(--c1)"/>
- <path d="M-61 -2H-23L-15 -3H43L72 -1V1L43 3H-15L-23 2H-61Z" style="fill:var(--c2)"/>
- <rect x="59" y="-19" width="11" height="38" rx="2" style="fill:var(--c2)"/><ellipse cx="3" cy="0" rx="9" ry="5" fill="#0b0d12"/></g>`;
-function campione(id,t){
- const r=REC.car[id];if(!r)return null;
- let i=REC.t.findIndex(x=>x>=t);if(i<0)i=REC.t.length-1;if(i===0)return {d:r.d[0],l:r.l[0],p:r.p[0]};
- const t0=REC.t[i-1],t1=REC.t[i],k=t1>t0?(t-t0)/(t1-t0):0;
- return {d:r.d[i-1]+(r.d[i]-r.d[i-1])*k,l:r.l[i-1]+(r.l[i]-r.l[i-1])*k,p:r.p[i]};
-}
-let anim=null;
-function ferma(){if(anim){cancelAnimationFrame(anim);anim=null;}}
-function avvia(host){
- ferma();
- const b=REC.migliore;if(!b||!host)return false;
- const path=$("trackPath"),len=path.getTotalLength(),mpu=metriPerUnita();
- const rot=$("trackRot").getAttribute("transform")||"";
- const io=$("player").value,colori={};
- const k=window.CASCO?window.CASCO.leggi():null;
- cars.forEach(c=>colori[c.id]=c.id===io&&k&&k.livrea!==false?[k.c1,k.c2]:[coloreSquadra(c.team),"rgba(10,12,18,.55)"]);
- host.innerHTML=`<div class="rpScena"><svg viewBox="0 0 100 60" preserveAspectRatio="xMidYMid slice" data-testid="replay-svg"><defs>${SVG_CAR}</defs>
-  <g transform="${rot}"><path d="${path.getAttribute("d")}" class="rpBordo"/><path d="${path.getAttribute("d")}" class="rpPista"/><g class="rpAuto"></g></g></svg></div>
-  <div class="rpInfo"><b>REPLAY</b> · Giro ${b.giro} · sorpasso su <b>${b.nome}</b> · P${b.pos+1} → P${b.pos}</div><div class="rpBar"><i></i></div>`;
- const svg=host.querySelector("svg"),gAuto=host.querySelector(".rpAuto"),barra=host.querySelector(".rpBar i");
- svg.querySelectorAll("path").forEach(p=>p.style.strokeWidth=(13/mpu).toFixed(2));
- svg.querySelector(".rpBordo").style.strokeWidth=(17/mpu).toFixed(2);svg.querySelector(".rpBordo").style.strokeDasharray=`${(3/mpu).toFixed(3)} ${(3/mpu).toFixed(3)}`;
- const m=$("trackRot").transform.baseVal.consolidate(),mat=m?m.matrix:new DOMMatrix();
- const t0=Math.max(REC.t[0]||0,b.t-4.5),t1=Math.min(REC.t[REC.t.length-1]||b.t,b.t+3.5);
- const lungh=5.6*2.1/mpu,larg=160/mpu;
- let tt=t0,ult=performance.now();
- const passo=Math.max(.0008,4/(circuit.lengthKm*1000));
- function punto(d,l){
-   const f=((d%1)+1)%1,p0=path.getPointAtLength(len*layoutFrac(f)),n=trackNormal(path,f),q=path.getPointAtLength(len*layoutFrac((f+passo)%1));
-   return {x:p0.x+n.x*l/mpu,y:p0.y+n.y*l/mpu,a:Math.atan2(q.y-p0.y,q.x-p0.x)*180/Math.PI};
- }
- function frame(now){
-   const dt=Math.min(.05,(now-ult)/1000);ult=now;
-   const lento=Math.abs(tt-b.t)<1.2?.3:.75;
-   tt+=dt*lento;
-   if(tt>t1+.8)tt=t0;
-   const t=Math.min(tt,t1),me=campione(io,t);
-   if(me){
-     const pm=punto(me.d,me.l),c=new DOMPoint(pm.x,pm.y).matrixTransform(mat);
-     const H=larg*.6;svg.setAttribute("viewBox",`${(c.x-larg/2).toFixed(2)} ${(c.y-H/2).toFixed(2)} ${larg.toFixed(2)} ${H.toFixed(2)}`);
-     let html="";
-     for(const car of cars){
-       const s=campione(car.id,t);if(!s||s.p)continue;
-       if(Math.abs(s.d-me.d)*circuit.lengthKm*1000>260)continue;
-       const p=punto(s.d,s.l),[c1,c2]=colori[car.id];
-       const cls=car.id===io?"mio":car.id===b.vittima?"vittima":"";
-       html+=`<g class="${cls}" transform="translate(${p.x.toFixed(2)} ${p.y.toFixed(2)}) rotate(${p.a.toFixed(1)}) scale(${(lungh/145).toFixed(4)})" style="--c1:${c1};--c2:${c2}"><use href="#rpAuto"/></g>`;
-     }
-     gAuto.innerHTML=html;
-   }
-   barra.style.width=((t-t0)/Math.max(.1,t1-t0)*100).toFixed(1)+"%";
-   anim=requestAnimationFrame(frame);
- }
- anim=requestAnimationFrame(frame);
- return true;
-}
-window.REPLAY.avvia=avvia;window.REPLAY.ferma=ferma;
-
-// Dopo gara (carriera): riquadro sopra la classifica
-const rp=document.createElement("div");rp.id="rpBox";rp.setAttribute("data-testid","replay-box");
-$("dgPag1").insertAdjacentElement("beforebegin",rp);
-new MutationObserver(()=>{
- const on=$("dopoGara").classList.contains("on");
- if(on&&REC.migliore){rp.style.display="";avvia(rp);}else{rp.style.display="none";if(!on)ferma();}
-}).observe($("dopoGara"),{attributes:true,attributeFilter:["class"]});
-$("dgAvanti").addEventListener("click",()=>{if(!$("dgPag1").offsetParent){rp.style.display="none";ferma();}});
-$("dgIndietro").addEventListener("click",()=>{if($("dgPag1").offsetParent&&REC.migliore){rp.style.display="";avvia(rp);}});
-
-// Gara libera: pulsante a fine gara
-const sheet=document.createElement("div");sheet.id="replaySheet";sheet.setAttribute("data-testid","replay-sheet");
-sheet.innerHTML=`<div class="homeCard"><h2>Miglior sorpasso</h2><div id="rpLibero"></div><button id="rpChiudi" class="primario" data-testid="replay-close"><b>CHIUDI</b></button></div>`;
-document.body.appendChild(sheet);
-$("rpChiudi").onclick=()=>{sheet.classList.remove("on");ferma();};
-const bt=document.createElement("button");bt.id="replayBtn";bt.textContent="REPLAY SORPASSO";bt.setAttribute("data-testid","replay-open-button");
-$("ctaRow").appendChild(bt);
-bt.onclick=()=>{sheet.classList.add("on");avvia($("rpLibero"));};
-setInterval(()=>{bt.style.display=raceEnded&&!running&&REC.migliore&&gameMode!=="career"?"":"none";},700);
+// --- ANGOLI: distacchi sotto la posizione, gomma grande in basso a sinistra,
+// meteo compatto in alto a destra (prima copriva il contagiri).
+const pos=$("haPos");
+pos.innerHTML=`<div class="hpRiga"><b id="haPosN">-</b><span id="haPosT">/-</span></div>`;
+pos.appendChild($("haGapA"));pos.appendChild($("haGapD"));
+const gap=$("haGap");gap.id="haGommaBox";gap.setAttribute("data-testid","hud-tyre");
+gap.innerHTML=`<div id="haGomma"></div>`;
+const NOMI={soft:"S",medium:"M",hard:"H",inter:"I",wet:"W"};
+const _hud=hudRefresh;
+hudRefresh=function(){
+ _hud();
+ const pc=playerCar();if(!pc)return;
+ const w=Math.round(pc.tyreWear),st=w>=88?"crit":w>=70?"alta":"";
+ $("haGomma").innerHTML=`<i class="g ${pc.comp}">${NOMI[pc.comp]||"?"}</i><div><b class="${st}">${w}%</b><span>${compounds[pc.comp]?compounds[pc.comp].name.toUpperCase():""}</span><div class="gBar"><i style="width:${clamp(100-w,0,100)}%"></i></div></div>`;
+ const r=window.METEO.rain;
+ $("haMeteoA").textContent=r<.05?(window.METEO.wet<.08?"ASCIUTTO":"NON PIOVE"):`PIOGGIA ${Math.round(r*100)}%`;
+ const sole=r>.05?"nuvoloso":window.METEO.sole>.7?"sole forte":window.METEO.sole>.35?"sole debole":"coperto";
+ $("haMeteoB").textContent=`Pista ${Math.round(window.METEO.wet*100)}% · ${sole}`;
+};
+if($("homeVersione"))$("homeVersione").textContent="v1.8.0";
 })();
 </script>
-<script>
-// Il replay si raggiunge anche dal podio, senza doverlo prima chiudere
-(function(){
-const b=document.createElement("button");b.id="pdReplay";b.textContent="RIVEDI IL SORPASSO";b.setAttribute("data-testid","podium-replay-button");
-$("pdContinua").insertAdjacentElement("beforebegin",b);
-b.onclick=()=>{$("replaySheet").classList.add("on");window.REPLAY.avvia($("rpLibero"));};
-new MutationObserver(()=>{b.style.display=$("podio").classList.contains("on")&&window.REPLAY.migliore?"":"none";}).observe($("podio"),{attributes:true,attributeFilter:["class"]});
-})();
-if($("homeVersione"))$("homeVersione").textContent="v1.7.0";</script>
 </body>
 </html>
