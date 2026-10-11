@@ -6434,8 +6434,9 @@ function altezza3D(){
  const W=box.clientWidth||wrap.clientWidth||360;
  const H=Math.round(clamp(W/asp*1.1,W*.64,W*.95));
  wrap.style.height=H+"px";
- box.style.height=Math.round(H*.82+70)+"px";
- wrap.style.top=Math.round(44-H*.09)+"px";
+ // in basso resta una fascia libera per gomma e boost: non coprono le vetture
+ box.style.height=Math.round(46+H*.88+78)+"px";
+ wrap.style.top=Math.round(46-H*.07)+"px";
 }
 const _inq=inquadraPista;
 inquadraPista=function(){
@@ -6581,6 +6582,76 @@ hudRefresh=function(){
  $("haMeteoB").textContent=`Pista ${Math.round(window.METEO.wet*100)}% · ${sole}`;
 };
 if($("homeVersione"))$("homeVersione").textContent="v1.8.0";
+})();
+</script>
+<script>
+// v1.8.1 - Robustezza: matrice della pista calcolata a mano (uguale su ogni
+// browser, anche Safari), ciclo di gara che non si blocca per un errore,
+// qualifica saltata durante il conto alla rovescia.
+(function(){
+const wrap=$("trackWrap"),box=$("pistaBox");
+// Matrice SVG -> riquadro, senza chiedere nulla al motore grafico del browser:
+// viewBox + preserveAspectRatio "xMidYMid meet" + rotazione del gruppo pista.
+function matriceLocale(el){
+ const svg=$("trackSvg"),vb=(svg.getAttribute("viewBox")||"0 0 900 520").split(/[\s,]+/).map(Number);
+ const W=svg.clientWidth||wrap.clientWidth,H=svg.clientHeight||wrap.clientHeight;
+ if(!(W>0&&H>0&&vb[2]>0&&vb[3]>0))return null;
+ const s=Math.min(W/vb[2],H/vb[3]),ox=(W-vb[2]*s)/2,oy=(H-vb[3]*s)/2;
+ let m=new DOMMatrix([s,0,0,s,ox-vb[0]*s,oy-vb[1]*s]);
+ // trasformazioni dei gruppi fra l'elemento e l'svg (di solito solo #trackRot)
+ const catena=[];for(let n=el;n&&n!==svg;n=n.parentNode){if(n.transform&&n.transform.baseVal&&n.transform.baseVal.numberOfItems)catena.unshift(n);}
+ for(const n of catena){const t=n.transform.baseVal.consolidate();if(t){const k=t.matrix;m=m.multiply(new DOMMatrix([k.a,k.b,k.c,k.d,k.e,k.f]));}}
+ return m;
+}
+const precedente=SVGGraphicsElement.prototype.getScreenCTM;
+SVGGraphicsElement.prototype.getScreenCTM=function(){
+ if(!document.body.classList.contains("vista3d")||!this.ownerSVGElement||this.ownerSVGElement.id!=="trackSvg")return precedente.call(this);
+ const m=matriceLocale(this);if(!m)return precedente.call(this);
+ const r=wrap.getBoundingClientRect();
+ return new DOMMatrix([1,0,0,1,r.left+wrap.clientLeft,r.top+wrap.clientTop]).multiply(m);
+};
+
+// Qualifica: "Salta" durante il conto alla rovescia faceva partire lo stesso
+// il giro lanciato in piena gara (qRunning restava acceso).
+const _qs=qStart;
+qStart=function(){if(!$("quali").classList.contains("on")||running||startPrepared)return;_qs();};
+
+// Ciclo di gara: un errore in un fotogramma non deve fermare tutto.
+const errBox=document.createElement("div");errBox.id="erroreGioco";errBox.setAttribute("data-testid","game-error-banner");
+errBox.innerHTML='<b>Errore nel gioco</b><span id="erroreTesto"></span><small>Tocca per copiare e mandalo allo sviluppatore.</small>';
+document.body.appendChild(errBox);
+let ultimoErr="",contaErr=0;
+function segnala(e){
+ const t=(e&&(e.stack||e.message)||String(e)).split("\n").slice(0,3).join(" | ");
+ contaErr++;
+ if(t===ultimoErr)return;ultimoErr=t;
+ $("erroreTesto").textContent=t.slice(0,240);errBox.classList.add("on");
+ try{console.error(e);}catch(_){}
+}
+errBox.onclick=()=>{try{const pr=navigator.clipboard&&navigator.clipboard.writeText(ultimoErr);if(pr&&pr.catch)pr.catch(()=>{});}catch(e){}errBox.classList.remove("on");};
+window.addEventListener("error",e=>segnala(e.error||e.message));
+window.addEventListener("unhandledrejection",e=>segnala(e.reason));
+const _loop=loop;
+loop=function(ts){
+ try{_loop(ts);}
+ catch(e){segnala(e);lastTs=ts;requestAnimationFrame(loop);}
+};
+window.ERRORI={ultimo:()=>ultimoErr,conta:()=>contaErr};
+if($("homeVersione"))$("homeVersione").textContent="v1.8.1";
+try{inquadraPista();render();}catch(e){}
+})();
+</script>
+<script>
+// v1.8.2 - Sul telefono la pagina si deve poter scorrere anche toccando la pista,
+// e dopo "Prepara partenza" semaforo e pulsante di partenza vengono portati in vista.
+(function(){
+const devOn=()=>{try{return localStorage.getItem("f1DevMenu_v100")==="1";}catch(e){return false;}};
+const aggiorna=()=>document.body.classList.toggle("scorriPista",!devOn());
+aggiorna();setInterval(aggiorna,1500);
+const vedi=el=>{if(!el)return;try{el.scrollIntoView({block:"center",behavior:"smooth"});}catch(e){el.scrollIntoView();}};
+$("prepare").addEventListener("click",()=>setTimeout(()=>vedi($("launch")),120));
+$("qClose").addEventListener("click",()=>setTimeout(()=>vedi($("prepare")),200));
+if($("homeVersione"))$("homeVersione").textContent="v1.8.2";
 })();
 </script>
 </body>

@@ -358,3 +358,14 @@ body:not(.vista3d) #pistaBox{background:none;border:0;overflow:visible}
 #pistaBox #radioBanner{top:84px;left:16%;right:16%}
 #haBoost #assistBtn{position:absolute;right:0;bottom:78px}
 @media(max-width:400px){#haBoost #assistBtn{bottom:70px}}
+
+/* v1.8.1 - Avviso errori */
+#erroreGioco{position:fixed;left:10px;right:10px;bottom:max(10px,env(safe-area-inset-bottom));z-index:120;display:none;flex-direction:column;gap:3px;
+ background:#2a0a10;border:1px solid #ff4d4d;border-left:4px solid #ff4d4d;border-radius:6px;padding:10px 12px;color:#ffd6d6;font-size:12px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+#erroreGioco.on{display:flex}
+#erroreGioco b{font-family:var(--f-head);letter-spacing:.08em;color:#fff}
+#erroreGioco span{font-family:ui-monospace,monospace;word-break:break-all}
+#erroreGioco small{color:#ff9a9a}
+
+/* v1.8.2 - si scorre anche toccando la pista (tranne con gli strumenti sviluppatore) */
+body.scorriPista #trackWrap,body.scorriPista #trackSvg,body.scorriPista #pistaBox{touch-action:pan-y pinch-zoom}
