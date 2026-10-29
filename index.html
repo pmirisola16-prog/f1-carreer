@@ -6656,46 +6656,47 @@ if($("homeVersione"))$("homeVersione").textContent="v1.8.2";
 </script>
 <style id="grafica-v190">
 /* ===== v1.9.0 - Tema chiaro, pista realistica, plancia semplificata ===== */
-:root{--bg:#eef1f6;--panel:#ffffff;--panel2:#f4f6fa;--line:#e1e6ee;--text:#0f1a2b;--muted:#5c6677;--blue:#2563eb}
+/* v1.9.1: palette pastello calda (crema, sabbia, terracotta) al posto del bianco */
+:root{--bg:#efe5d6;--panel:#fbf5ec;--panel2:#f4eadb;--line:#e3d5c0;--text:#2d2419;--muted:#7d6b57;--blue:#4a73c9;--red:#d0533b;--amber:#e39a3b;--green:#4f9d5d}
 html,body{background:var(--bg)!important;background-image:none!important;color:var(--text)}
 .panel,.homeCard{background:var(--panel)!important;border:1px solid var(--line)!important;border-radius:16px!important;color:var(--text);box-shadow:0 2px 12px rgba(15,26,43,.06)!important}
 .homeCard::before,#trackPanel::before{display:none!important}
 h1,h2,.big,#phNome{color:var(--text)}
 .sub,.small,.note{color:var(--muted)}
-button,select{background:#f1f4f9;color:var(--text);border:1px solid var(--line);border-radius:10px}
-button:hover:not(:disabled){background:#e8edf5;border-color:#ccd3de}
-input[type=text],input[type=number],select,textarea{background:#fff!important;color:var(--text)!important;border:1px solid var(--line)!important;border-radius:10px!important}
+button,select{background:#f6ecdd;color:var(--text);border:1px solid var(--line);border-radius:10px}
+button:hover:not(:disabled){background:#efe2cf;border-color:#d6c4aa}
+input[type=text],input[type=number],select,textarea{background:var(--panel)!important;color:var(--text)!important;border:1px solid var(--line)!important;border-radius:10px!important}
 .primario,#primario,#prepare,#launch,#ctaRow button,#ctaRow #qualiBtn,#qClose,#dgAvanti,#tabelloneChiudi,#radioChiudi{background:var(--blue)!important;border-color:var(--blue)!important;color:#fff!important}
-.vai,#svChiudi{background:#16a34a!important;border-color:#16a34a!important;color:#fff!important}
-#homeMenu>button{background:#fff!important;color:var(--text)!important;border:1px solid var(--line)!important;border-left:4px solid var(--blue)!important}
+.vai,#svChiudi{background:var(--green)!important;border-color:var(--green)!important;color:#fff!important}
+#homeMenu>button{background:var(--panel)!important;color:var(--text)!important;border:1px solid var(--line)!important;border-left:4px solid var(--blue)!important}
 #homeMenu>button:nth-of-type(1){border-left-color:#e10600!important}
 #homeMenu>button:nth-of-type(2){border-left-color:#ff9f1c!important}
 #homeMenu>button:nth-of-type(3){border-left-color:#16a34a!important}
 #homeMenu>button .small{color:var(--muted)}
-#home,#classifiche,#pilota,#resoconto,#offerte,#dopoGara,#tabellone{background:rgba(238,241,246,.97)!important}
-#radioStoria,#impostazioni,#mercato,#replaySheet{background:rgba(15,26,43,.45)!important}
+#home,#classifiche,#pilota,#resoconto,#offerte,#dopoGara,#tabellone,#podio{background:rgba(239,229,214,.98)!important}
+#radioStoria,#impostazioni,#mercato,#replaySheet{background:rgba(45,36,25,.45)!important}
 td{background:transparent!important;border-bottom:1px solid var(--line);color:var(--text)}
 th{color:var(--muted)}
-tr.me td,tr.mia td,.me td{background:#fff4dc!important}
-#quali,#hud{background:#fff!important;border:1px solid var(--line)!important;border-radius:16px!important;color:var(--text)}
-#meteoPrev{background:#fff!important;color:var(--text)!important;border-radius:10px!important}
+tr.me,tr.mia{background:#f6dcc0!important}tr.me td,tr.mia td,.me td{background:#f6dcc0!important}
+#quali,#hud{background:var(--panel)!important;border:1px solid var(--line)!important;border-radius:16px!important;color:var(--text)}
+#meteoPrev{background:var(--panel)!important;color:var(--text)!important;border-radius:10px!important}
 #meteoPrev b{color:var(--text)}
-#events{background:#fff!important;color:var(--text)!important;border:1px solid var(--line);border-radius:12px;padding:10px}
-.pill{background:#eef2f8!important;color:var(--text)!important;border:1px solid var(--line)!important;border-radius:999px!important}
-.light{background:#d7dce5;border-color:#c3cad6}
-#radioBanner{background:rgba(255,255,255,.97)!important;color:var(--text)!important;box-shadow:0 8px 24px rgba(15,26,43,.25)}
+#events{background:var(--panel)!important;color:var(--text)!important;border:1px solid var(--line);border-radius:12px;padding:10px}
+.pill{background:var(--panel2)!important;color:var(--text)!important;border:1px solid var(--line)!important;border-radius:999px!important}
+.light{background:#ddd0bd;border-color:#cbb99f}
+#radioBanner{background:rgba(251,245,236,.97)!important;color:var(--text)!important;box-shadow:0 8px 24px rgba(15,26,43,.25)}
 #radioBanner .rTxt{color:var(--text)}
 .rItem,.mcItem{background:var(--panel2)!important}
 
 /* --- PISTA: prato, asfalto, cordoli, pit lane --- */
 body:not(.vista3d) #pistaBox{background:none;border:0}
-#trackWrap{background-color:#3fae55!important;
+#trackWrap{background-color:#6cb55f!important;
  background-image:repeating-linear-gradient(120deg,rgba(255,255,255,.06) 0 22px,rgba(255,255,255,0) 22px 44px)!important;
  border:0!important;border-radius:16px!important;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08),0 4px 16px rgba(15,26,43,.12)}
 #trackWrap .trackBordo{fill:none;stroke:#f5f6f8;stroke-linecap:round;stroke-linejoin:round}
-#trackWrap .trackBase{fill:none;stroke:color-mix(in srgb,#2f5a86 calc(var(--wet)*60%),#4a4f58)!important;stroke-linecap:round;stroke-linejoin:round}
+#trackWrap .trackBase{fill:none;stroke:color-mix(in srgb,#2f5a86 calc(var(--wet)*60%),#55595f)!important;stroke-linecap:round;stroke-linejoin:round}
 #trackWrap .trackEdge{fill:none;stroke:#ffffff!important;opacity:.8;stroke-linecap:butt}
-#trackWrap .pitLane{stroke:#6c727b!important;opacity:1!important;stroke-linecap:round;stroke-linejoin:round}
+#trackWrap .pitLane{stroke:#6e7277!important;opacity:1!important;stroke-linecap:round;stroke-linejoin:round}
 #trackWrap .pitLaneEdge{stroke:#ffffff!important;opacity:.75!important}
 #trackWrap .pitStall{stroke:#ffffff!important;opacity:.9}
 #trackWrap .pitLabel,#trackWrap .pitStallLabel{fill:#fff!important;paint-order:stroke;stroke:#1d4d2a;stroke-width:3px;font-weight:800}
@@ -6705,9 +6706,9 @@ body:not(.vista3d) #pistaBox{background:none;border:0}
 #trackWrap .landmark{fill:#eaf7ee!important}
 #trackWrap .landmarkLabel{fill:#f3fbf5!important;paint-order:stroke;stroke:rgba(16,50,26,.8);stroke-width:2.5px;font-weight:700}
 #decorPista .ombra{fill:rgba(0,0,0,.18)}
-#decorPista .chioma{fill:#23803a}
-#decorPista .luce{fill:#4cc266}
-#decorPista .lago{fill:#3b82f6;stroke:#2563eb;stroke-width:1.5}
+#decorPista .chioma{fill:#3f8a46}
+#decorPista .luce{fill:#7cc770}
+#decorPista .lago{fill:#6aa6d8;stroke:#4f8cc4;stroke-width:1.5}
 #decorPista .tribuna{fill:#d9dde3;stroke:#8f97a3;stroke-width:1}
 #decorPista .fila{stroke:#a9b0bb;stroke-width:1}
 #decorPista .tetto{fill:#c62828}
@@ -6715,23 +6716,23 @@ body:not(.vista3d) #pistaBox{background:none;border:0}
 #trackWrap:not(.vicina) .car{width:12px;height:12px;border:2px solid #fff!important;box-shadow:0 1px 4px rgba(0,0,0,.45)}
 #trackWrap:not(.vicina) .car.mia{width:17px;height:17px;border:3px solid #fff!important;box-shadow:0 0 0 2px #e10600,0 2px 8px rgba(0,0,0,.5)}
 #trackWrap:not(.vicina) .car.mia::before{content:"TU";position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);
- background:#0f1a2b;color:#fff;font:800 10px/1 'Saira Condensed',system-ui,sans-serif;letter-spacing:.08em;padding:3px 6px;border-radius:6px;white-space:nowrap}
+ background:#3a2f24;color:#fff;font:800 10px/1 'Saira Condensed',system-ui,sans-serif;letter-spacing:.08em;padding:3px 6px;border-radius:6px;white-space:nowrap}
 
 /* --- ANGOLI: schede bianche leggibili sul prato --- */
-#pistaBox .ha{background:rgba(255,255,255,.95)!important;color:var(--text)!important;text-shadow:none!important;border-radius:10px!important;box-shadow:0 3px 12px rgba(15,26,43,.2)}
+#pistaBox .ha{background:rgba(251,245,236,.96)!important;color:var(--text)!important;text-shadow:none!important;border-radius:10px!important;box-shadow:0 3px 12px rgba(15,26,43,.2)}
 #pistaBox #haBoost.ha{background:none!important;box-shadow:none!important}
 #haPos{border-left:4px solid #e10600!important}
 #haPos b{color:var(--text)!important}#haPos span{color:var(--muted)!important}
 #haGiro span{color:var(--muted)!important}#haGiro b{color:var(--text)!important}
 #haMeteo b{color:var(--text)!important}#haMeteo span{color:var(--muted)!important}
-#haGommaBox .g{background:#fff!important;color:var(--text)!important;box-shadow:none!important}
+#haGommaBox .g{background:var(--panel)!important;color:var(--text)!important;box-shadow:none!important}
 #haGommaBox b{color:var(--text)}#haGommaBox b.alta{color:#d97706}#haGommaBox b.crit{color:#dc2626}
 #haGommaBox span{color:var(--muted)!important}#haGommaBox .gBar{background:#e3e7ee}
-#haEnBox{background:rgba(255,255,255,.95)!important;border-radius:10px!important;box-shadow:0 3px 12px rgba(15,26,43,.2)}
+#haEnBox{background:rgba(251,245,236,.96)!important;border-radius:10px!important;box-shadow:0 3px 12px rgba(15,26,43,.2)}
 #haEnBox span{color:var(--muted)!important}#haEnBox b{color:var(--text)!important}.haEnBar{background:#e3e7ee!important}
-#haBoost #boost{background:#0f1a2b!important;color:#fff!important}
+#haBoost #boost{background:#3a2f24!important;color:#fff!important}
 #haBoost #boost.on{background:#16a34a!important;color:#fff!important}
-#haBoost #assistBtn{background:#fff!important;color:var(--text)!important;border:1px solid var(--line)!important}
+#haBoost #assistBtn{background:var(--panel)!important;color:var(--text)!important;border:1px solid var(--line)!important}
 
 /* --- PLANCIA SOTTO LA PISTA: distacco + box (+ radio solo se serve) --- */
 #hud .sec,#hud #hudSlotBoost{display:none!important}
@@ -6755,11 +6756,11 @@ body:not(.vista3d) #pistaBox{background:none;border:0}
 body:not(.tabellone) #classificaPanel,body:not(.tabellone) #eventiPanel{display:none!important}
 
 /* --- POSIZIONI COMPATTE --- */
-#posCompatte{display:none;margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:6px}
+#posCompatte{display:none;margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:6px}
 #posCompatte.on{display:block}
 #posCompatte .pr{display:flex;align-items:center;gap:8px;height:30px;padding:0 8px;border-radius:8px;font-size:13px}
-#posCompatte .pr:nth-child(even){background:#f8fafd}
-#posCompatte .pr.me{background:#fff4dc;font-weight:800}
+#posCompatte .pr:nth-child(even){background:var(--panel2)}
+#posCompatte .pr.me{background:#f6dcc0;font-weight:800}
 #posCompatte .pr b{width:30px;font-family:'Chakra Petch',ui-monospace,monospace}
 #posCompatte .pr i{width:4px;height:16px;border-radius:2px;flex:0 0 4px}
 #posCompatte .pr span{flex:1;font-weight:700;letter-spacing:.04em}
@@ -6768,6 +6769,52 @@ body:not(.tabellone) #classificaPanel,body:not(.tabellone) #eventiPanel{display:
 #posCompatte .pr u.soft{border-color:#ef4444}#posCompatte .pr u.medium{border-color:#eab308}#posCompatte .pr u.hard{border-color:#9ca3af}
 #posCompatte .pr u.inter{border-color:#22c55e}#posCompatte .pr u.wet{border-color:#3b82f6}
 #posCompatte .sep{text-align:center;color:var(--muted);font-size:11px;line-height:14px}
+/* durante la partenza la riga serve solo a semaforo e lancio */
+#hud:not(.inGara) #gapBox,#hud:not(.inGara) #miniCol,#hud:not(.inGara) #hudSlotPit{display:none!important}
+/* esito partenza: in alto al centro, sotto il giro, stile caldo */
+#esitoPartenza{right:auto!important;left:50%!important;top:64px!important;transform:translateX(-50%);background:rgba(251,245,236,.97)!important;border:1px solid var(--line)!important;border-left:4px solid currentColor!important;box-shadow:0 3px 12px rgba(45,36,25,.2);z-index:12!important;text-align:center}
+#esitoPartenza span{color:var(--muted)!important}
+#esitoPartenza.Perfetta,#esitoPartenza.Ottima{color:#2f7a3d!important}
+#esitoPartenza.Buona{color:#9a6a00!important}
+#esitoPartenza.Scarsa{color:#b4621a!important}
+#esitoPartenza.Pessima,#esitoPartenza.Anticipata{color:#b23a2a!important}
+
+/* v1.9.1: pista pulita come nel modello - niente scritte sparse sull'asfalto */
+#trackWrap .zoneLabel,#trackWrap .landmarkLabel,#trackWrap .landmark{display:none!important}
+#trackWrap .zone{opacity:0!important}
+#trackWrap:not(.vicina) .car{width:14px;height:14px}
+#trackWrap:not(.vicina) .car.mia{width:19px;height:19px}
+
+/* v1.9.1: fine gara, podio, stagione, bacheca leggibili col tema caldo */
+#dgCard,#dgCard *{text-shadow:none}
+#quali.fine .qWrap{background:var(--panel)!important;border:1px solid var(--line)!important;color:var(--text)!important}
+#ctaRow label{color:var(--muted)!important}
+#dgClassifica tr{background:transparent}
+#dgClassifica tr.mia,#dgClassifica tr.mia td{background:#f6dcc0!important;color:var(--text)!important}
+#dgClassifica td{color:var(--text)!important}
+#dgClassifica td:first-child,#dgClassifica .sq{color:var(--muted)!important}
+.dgTab button{background:var(--panel2)!important;color:var(--text)!important;border:1px solid var(--line)!important}
+.dgTab button.on{background:var(--blue)!important;border-color:var(--blue)!important;color:#fff!important}
+#dgIndietro{background:var(--panel2)!important;color:var(--text)!important}
+#dgSub,#dgXp{color:var(--muted)!important}
+.plRow .bar,.svGiu .bar,.gBar{background:#e6d8c4!important}
+.plRow .bar i,.svGiu .bar i{background:var(--blue)!important}
+.kpi>div,.fsStat,.fsMom,.bcConta>div,.bcTitolo,.rpScena,.ckNum input{background:var(--panel2)!important;color:var(--text)!important;border-color:var(--line)!important}
+.fsStat b,.bcConta b,.bcTitolo b,.fsMom b{color:var(--text)!important}
+.pdPilota b{color:var(--text)!important}.pdPilota span{color:var(--muted)!important}
+.pdBlocco{background:linear-gradient(180deg,#e9dac4,#dccab0)!important}
+.pdBlocco i{color:#5a4733!important}
+#pdTitolo{color:var(--text)!important}
+.pdCasco i{color:var(--text)!important}
+#cascoEditor,#bacheca{background:rgba(239,229,214,.98)!important}
+.pill.fase,.pill.fase.fine{background:var(--panel2)!important;color:var(--muted)!important;border-color:var(--line)!important}
+.pill.fase.qualifica{background:#f8e7bf!important;color:#8a5a00!important;border-color:#e8c779!important}
+.pill.fase.gara{background:#dcefd8!important;color:#2f6b3a!important;border-color:#a9d3a5!important}
+.pill.meteo,.pill.meteo.asciutto,.pill.meteo.variabile{background:#f8e7bf!important;color:#7a5200!important;border-color:#e8c779!important}
+.pill.meteo.pioggia,.qMeteo.bagnato{background:#dbe7f6!important;color:#2f5a8f!important;border-color:#a8c3e6!important}
+#rsTab th,#rsTab td{color:var(--text)!important}
+.rItem *,.mcItem *{color:inherit}
+#offerte .homeCard *,#resoconto .homeCard *{text-shadow:none}
 </style>
 <script>
 // v1.9.0 - Pista disegnata come un circuito vero (prato, alberi, tribune,
@@ -6784,7 +6831,7 @@ if(!v3()){const w=$("trackWrap"),b=$("pistaBox");if(w){w.style.top="";w.style.he
 
 function rng(seed){let s=7;for(const ch of String(seed))s=(s*31+ch.charCodeAt(0))>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
 function el(tag,attrs,parent){const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);if(parent)parent.appendChild(n);return n;}
-function larghezzaPiena(){const b=$("trackPath").getBBox();return Math.max(b.width,b.height)*.034;}
+function larghezzaPiena(){const b=$("trackPath").getBBox();return Math.max(b.width,b.height)*.05;}
 
 function disegnaDecor(){
  const g=$("trackRot"),path=$("trackPath");if(!g||!path)return;
@@ -6872,6 +6919,9 @@ const _adP=adattaAltezzaPista;
 adattaAltezzaPista=function(){if(v3())return _adP();altezzaPiatta();};
 const _cam=aggiornaCamera;
 aggiornaCamera=function(...a){const r=_cam(...a);try{stile();}catch(e){}return r;};
+// setupTrack lancia setTimeout(aggiornaScala,0) che rimette l'asfalto a 13 m reali (sottile): riapplica la larghezza piena
+const _scala=aggiornaScala;
+aggiornaScala=function(...a){const r=_scala(...a);try{stile();}catch(e){}return r;};
 
 // --- plancia: distacco accanto al box, radio solo con pioggia o gomme consumate
 const row=document.querySelector("#hud .row"),pitCol=$("hudSlotPit");
@@ -6892,6 +6942,7 @@ const sig=c=>(c.name.split(" ").pop()||c.name).slice(0,3).toUpperCase();
 function aggiorna(){
  const vis=(running||startPrepared||raceEnded)&&!qRunning;
  lista.classList.toggle("on",vis);
+ $("hud").classList.toggle("inGara",!!(running||raceEnded));
  const pc=playerCar();
  const rb=$("radioStoriaBtn");
  if(rb){const M=window.METEO||{};rb.style.display=(pc&&((M.rain||0)>.05||(M.wet||0)>=.18||pc.tyreWear>=70))?"":"none";}
@@ -6902,15 +6953,36 @@ function aggiorna(){
  let h="",prima=-1;
  sel.forEach(k=>{
    if(prima>=0&&k>prima+1)h+='<div class="sep">···</div>';prima=k;
-   const c=o[k],gap=k===0?"LEADER":c.retired?"RIT":c.inPit?"BOX":"+"+gapSec(lead,c).toFixed(1);
+   const c=o[k];
+   // a gara finita il distacco e' la differenza dei tempi totali
+   const sec=(c.finished&&lead.finished)?(c.elapsed-lead.elapsed):gapSec(lead,c);
+   const gap=k===0?"LEADER":c.retired?"RIT":c.inPit?"BOX":"+"+Math.max(0,sec).toFixed(c.finished?2:1);
    h+=`<div class="pr${c===pc?" me":""}"><b>P${k+1}</b><i style="background:${coloreSquadra(c.team)}"></i><span>${sig(c)}</span><em>${gap}</em><u class="${c.comp}">${NOMI[c.comp]||"?"}</u></div>`;
  });
  lista.innerHTML=h;
 }
 setInterval(()=>{try{aggiorna();}catch(e){}},500);
 
+// v1.9.1 - Distacchi: le monoposto si allungano in base alla macchina.
+// Tra la vettura migliore e la peggiore si aggiunge fino a 1 s/giro,
+// in proporzione a potenza e carico aerodinamico (stessa formula del gioco).
+const _bl=baseLap;
+const perfAuto=c=>{const t=teams[c.team]||Object.values(teams)[0];return t.power*.45+t.aero*.55;};
+let _rif=null,_rifT=-1;
+function riferimenti(){
+ if(_rif&&_rifT===cars.length)return _rif;
+ const v=cars.map(perfAuto);_rif={max:Math.max(...v),min:Math.min(...v)};_rifT=cars.length;return _rif;
+}
+baseLap=function(c){
+ const v=_bl(c);
+ try{const r=riferimenti(),span=r.max-r.min;if(span>0)return v+(r.max-perfAuto(c))/span*1.0;}catch(e){}
+ return v;
+};
+const _setupR=setupTrack;
+setupTrack=function(...a){_rif=null;return _setupR(...a);};
+
 try{setupTrack();render();}catch(e){}
-if($("homeVersione"))$("homeVersione").textContent="v1.9.0";
+if($("homeVersione"))$("homeVersione").textContent="v1.9.1";
 })();
 </script>
 
