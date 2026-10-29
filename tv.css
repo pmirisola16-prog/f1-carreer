@@ -369,3 +369,99 @@ body:not(.vista3d) #pistaBox{background:none;border:0;overflow:visible}
 
 /* v1.8.2 - si scorre anche toccando la pista (tranne con gli strumenti sviluppatore) */
 body.scorriPista #trackWrap,body.scorriPista #trackSvg,body.scorriPista #pistaBox{touch-action:pan-y pinch-zoom}
+/* === TEMA CHIARO v1.0 - sovrascrive il tema scuro originale === */
+:root{
+  --bg:#eef1f6 !important;
+  --panel:#ffffff !important;
+  --panel2:#f6f8fb !important;
+  --line:#e3e7ee !important;
+  --text:#0f1a2b !important;
+  --muted:#5c6677 !important;
+  --red:#e10600 !important;
+  --amber:#ff9f1c !important;
+  --green:#2ecc71 !important;
+  --blue:#2563eb !important;
+  --inter:#22c55e !important;
+}
+html,body{background:var(--bg) !important;color:var(--text) !important;background-image:none !important}
+body{font-family:'Saira',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif !important}
+
+.panel,.homeCard{background:var(--panel) !important;border:1px solid var(--line) !important;border-radius:16px !important;color:var(--text) !important;box-shadow:0 2px 10px rgba(16,24,40,.05) !important}
+.homeCard{box-shadow:0 8px 28px rgba(16,24,40,.08) !important}
+.homeCard::before,#trackPanel::before{display:none !important}
+h1,h2,.big,#phNome{color:var(--text) !important}
+.sub,.small,.muted,#homeSub{color:var(--muted) !important}
+
+button,select{background:#f1f4f9 !important;color:var(--text) !important;border:1px solid var(--line) !important;border-radius:10px !important;font-family:'Saira',system-ui,sans-serif !important}
+button:hover:not(:disabled){border-color:#c9d0dc !important;background:#eaeef5 !important}
+button:disabled{opacity:.5 !important}
+
+.primario,#primario,.vai,#homeNew,#homeContinue,#homeFree,#qClose,#svChiudi,#dgAvanti,#prepare,#launch,#boost,#pit{background:var(--blue) !important;color:#ffffff !important;border:1px solid var(--blue) !important;box-shadow:0 2px 0 rgba(37,99,235,.25) !important}
+.vai{background:var(--green) !important;border-color:var(--green) !important;color:#06220f !important}
+#homeNew b,#homeContinue b,#homeFree b{color:#fff !important}
+#homeNew .small,#homeContinue .small,#homeFree .small{color:rgba(255,255,255,.85) !important}
+
+#homeMenu>button{background:#ffffff !important;color:var(--text) !important;border:1px solid var(--line) !important;border-left:4px solid var(--blue) !important}
+#homeMenu>button b{color:var(--text) !important}
+#homeMenu>button .small{color:var(--muted) !important}
+#homeMenu>button:nth-of-type(1){border-left-color:var(--red) !important}
+#homeMenu>button:nth-of-type(2){border-left-color:var(--amber) !important}
+#homeMenu>button:nth-of-type(3){border-left-color:var(--green) !important}
+
+table{color:var(--text) !important}
+th{color:var(--muted) !important;border-bottom:1px solid var(--line) !important}
+td{background:transparent !important;border-bottom:1px solid var(--line) !important;color:var(--text) !important}
+tr.me td,tr.mia td,.me td{background:#fff2d6 !important}
+tr.me td:first-child,tr.mia td:first-child{border-left-color:var(--red) !important}
+
+#trackWrap{background:#f6f8fb !important;border:1px solid var(--line) !important;border-radius:14px !important}
+.trackBase{stroke:#c9d0dc !important}
+.trackEdge{stroke:#9aa3b1 !important}
+.zone{fill:#0f1a2b !important;opacity:.75 !important}
+.zoneLabel{fill:#0f1a2b !important}
+.landmarkLabel{fill:#5c6677 !important}
+.startLine{stroke:#0f1a2b !important}
+
+.cell{background:#ffffff !important;border:1px solid var(--line) !important;border-radius:10px !important}
+.cell>span{color:var(--muted) !important}
+.cell>b{color:var(--text) !important;font-weight:800 !important}
+.pill{background:#eef2f8 !important;color:var(--text) !important;border:1px solid var(--line) !important;border-radius:999px !important}
+
+input[type=text],input[type=number],select,textarea{background:#ffffff !important;color:var(--text) !important;border:1px solid var(--line) !important;border-radius:10px !important}
+input::placeholder{color:#9aa3b1 !important}
+
+.energybar,.tyrebar{background:#e3e7ee !important}
+.energybar span,.tyrebar span{background:#0f1a2b !important}
+#events{background:#ffffff !important;border:1px solid var(--line) !important;border-radius:12px !important;padding:10px !important;color:var(--text) !important}
+
+#hud{background:var(--panel) !important;border:1px solid var(--line) !important;border-radius:14px !important;color:var(--text) !important}
+#hud .cell{background:#f6f8fb !important}
+#hud .cell>span{color:var(--muted) !important}
+#hud .cell>b{color:var(--text) !important}
+#hud .sec{border-top:1px solid var(--line) !important}
+#esitoPartenza{background:#0f1a2b !important;color:#fff !important;border:1px solid #0f1a2b !important;border-radius:8px !important}
+#aggiorna{background:var(--panel) !important;color:var(--text) !important;border:1px solid var(--line) !important;border-radius:12px !important}
+#prepare,#launch{background:var(--blue) !important;border-color:var(--blue) !important;color:#fff !important}
+#boost.on{background:var(--green) !important;border-color:var(--green) !important;color:#06220f !important}
+#pit.active{background:var(--amber) !important;border-color:var(--amber) !important;color:#2a1a00 !important}
+
+#home,#classifiche,#pilota,#resoconto,#offerte,#dopoGara{background:rgba(238,241,246,.96) !important}
+#backupBtn,#restoreBtn,#installBtn,#homeSettings{background:#f1f4f9 !important;color:var(--text) !important;border:1px solid var(--line) !important}
+#svChiudi.vai,#qClose.vai,#dgAvanti.primario{color:#fff !important}
+#home .homeCard h2,#classifiche .homeCard h2,#pilota .homeCard h2,#dopoGara .homeCard h2,#resoconto .homeCard h2,#offerte .homeCard h2{color:var(--text) !important}
+
+#standings tbody tr:nth-child(even) td,#dgClassifica tbody tr:nth-child(even) td,#careerDrivers tbody tr:nth-child(even) td,#careerTeams tbody tr:nth-child(even) td{background:#f8fafd !important}
+
+.qBar{background:#ffffff !important;border:1px solid var(--line) !important}
+.qZone{background:rgba(37,99,235,.18) !important;border-color:var(--blue) !important}
+.qCur{background:#0f1a2b !important}
+.qCar{background:#2563eb !important;border-color:#0f1a2b !important;box-shadow:0 0 0 3px rgba(37,99,235,.25) !important}
+
+::selection{background:#2563eb !important;color:#fff !important}
+.light{background:#d7dce5 !important;border:1px solid var(--line) !important}
+.light.on{background:#e10600 !important;border-color:#e10600 !important;box-shadow:0 0 10px rgba(225,6,0,.5) !important}
+.startBox{background:#ffffff !important;border:1px solid var(--line) !important;border-radius:12px !important}
+.note{color:var(--muted) !important}
+*::-webkit-scrollbar{width:8px;height:8px}
+*::-webkit-scrollbar-thumb{background:#c9d0dc;border-radius:8px}
+#home .homeCard h2 span{color:var(--red) !important}
