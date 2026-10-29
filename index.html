@@ -6654,5 +6654,265 @@ $("qClose").addEventListener("click",()=>setTimeout(()=>vedi($("prepare")),200))
 if($("homeVersione"))$("homeVersione").textContent="v1.8.2";
 })();
 </script>
+<style id="grafica-v190">
+/* ===== v1.9.0 - Tema chiaro, pista realistica, plancia semplificata ===== */
+:root{--bg:#eef1f6;--panel:#ffffff;--panel2:#f4f6fa;--line:#e1e6ee;--text:#0f1a2b;--muted:#5c6677;--blue:#2563eb}
+html,body{background:var(--bg)!important;background-image:none!important;color:var(--text)}
+.panel,.homeCard{background:var(--panel)!important;border:1px solid var(--line)!important;border-radius:16px!important;color:var(--text);box-shadow:0 2px 12px rgba(15,26,43,.06)!important}
+.homeCard::before,#trackPanel::before{display:none!important}
+h1,h2,.big,#phNome{color:var(--text)}
+.sub,.small,.note{color:var(--muted)}
+button,select{background:#f1f4f9;color:var(--text);border:1px solid var(--line);border-radius:10px}
+button:hover:not(:disabled){background:#e8edf5;border-color:#ccd3de}
+input[type=text],input[type=number],select,textarea{background:#fff!important;color:var(--text)!important;border:1px solid var(--line)!important;border-radius:10px!important}
+.primario,#primario,#prepare,#launch,#ctaRow button,#ctaRow #qualiBtn,#qClose,#dgAvanti,#tabelloneChiudi,#radioChiudi{background:var(--blue)!important;border-color:var(--blue)!important;color:#fff!important}
+.vai,#svChiudi{background:#16a34a!important;border-color:#16a34a!important;color:#fff!important}
+#homeMenu>button{background:#fff!important;color:var(--text)!important;border:1px solid var(--line)!important;border-left:4px solid var(--blue)!important}
+#homeMenu>button:nth-of-type(1){border-left-color:#e10600!important}
+#homeMenu>button:nth-of-type(2){border-left-color:#ff9f1c!important}
+#homeMenu>button:nth-of-type(3){border-left-color:#16a34a!important}
+#homeMenu>button .small{color:var(--muted)}
+#home,#classifiche,#pilota,#resoconto,#offerte,#dopoGara,#tabellone{background:rgba(238,241,246,.97)!important}
+#radioStoria,#impostazioni,#mercato,#replaySheet{background:rgba(15,26,43,.45)!important}
+td{background:transparent!important;border-bottom:1px solid var(--line);color:var(--text)}
+th{color:var(--muted)}
+tr.me td,tr.mia td,.me td{background:#fff4dc!important}
+#quali,#hud{background:#fff!important;border:1px solid var(--line)!important;border-radius:16px!important;color:var(--text)}
+#meteoPrev{background:#fff!important;color:var(--text)!important;border-radius:10px!important}
+#meteoPrev b{color:var(--text)}
+#events{background:#fff!important;color:var(--text)!important;border:1px solid var(--line);border-radius:12px;padding:10px}
+.pill{background:#eef2f8!important;color:var(--text)!important;border:1px solid var(--line)!important;border-radius:999px!important}
+.light{background:#d7dce5;border-color:#c3cad6}
+#radioBanner{background:rgba(255,255,255,.97)!important;color:var(--text)!important;box-shadow:0 8px 24px rgba(15,26,43,.25)}
+#radioBanner .rTxt{color:var(--text)}
+.rItem,.mcItem{background:var(--panel2)!important}
+
+/* --- PISTA: prato, asfalto, cordoli, pit lane --- */
+body:not(.vista3d) #pistaBox{background:none;border:0}
+#trackWrap{background-color:#3fae55!important;
+ background-image:repeating-linear-gradient(120deg,rgba(255,255,255,.06) 0 22px,rgba(255,255,255,0) 22px 44px)!important;
+ border:0!important;border-radius:16px!important;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08),0 4px 16px rgba(15,26,43,.12)}
+#trackWrap .trackBordo{fill:none;stroke:#f5f6f8;stroke-linecap:round;stroke-linejoin:round}
+#trackWrap .trackBase{fill:none;stroke:color-mix(in srgb,#2f5a86 calc(var(--wet)*60%),#4a4f58)!important;stroke-linecap:round;stroke-linejoin:round}
+#trackWrap .trackEdge{fill:none;stroke:#ffffff!important;opacity:.8;stroke-linecap:butt}
+#trackWrap .pitLane{stroke:#6c727b!important;opacity:1!important;stroke-linecap:round;stroke-linejoin:round}
+#trackWrap .pitLaneEdge{stroke:#ffffff!important;opacity:.75!important}
+#trackWrap .pitStall{stroke:#ffffff!important;opacity:.9}
+#trackWrap .pitLabel,#trackWrap .pitStallLabel{fill:#fff!important;paint-order:stroke;stroke:#1d4d2a;stroke-width:3px;font-weight:800}
+#trackWrap .startLine{stroke:#fff!important}
+#trackWrap .zone{fill:#fff!important;stroke:#0f1a2b;stroke-width:1.5;opacity:1!important}
+#trackWrap .zoneLabel{fill:#fff!important;paint-order:stroke;stroke:rgba(16,50,26,.9);stroke-width:3px;font-weight:800}
+#trackWrap .landmark{fill:#eaf7ee!important}
+#trackWrap .landmarkLabel{fill:#f3fbf5!important;paint-order:stroke;stroke:rgba(16,50,26,.8);stroke-width:2.5px;font-weight:700}
+#decorPista .ombra{fill:rgba(0,0,0,.18)}
+#decorPista .chioma{fill:#23803a}
+#decorPista .luce{fill:#4cc266}
+#decorPista .lago{fill:#3b82f6;stroke:#2563eb;stroke-width:1.5}
+#decorPista .tribuna{fill:#d9dde3;stroke:#8f97a3;stroke-width:1}
+#decorPista .fila{stroke:#a9b0bb;stroke-width:1}
+#decorPista .tetto{fill:#c62828}
+/* vetture: cerchi pieni con bordo bianco */
+#trackWrap:not(.vicina) .car{width:12px;height:12px;border:2px solid #fff!important;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+#trackWrap:not(.vicina) .car.mia{width:17px;height:17px;border:3px solid #fff!important;box-shadow:0 0 0 2px #e10600,0 2px 8px rgba(0,0,0,.5)}
+#trackWrap:not(.vicina) .car.mia::before{content:"TU";position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);
+ background:#0f1a2b;color:#fff;font:800 10px/1 'Saira Condensed',system-ui,sans-serif;letter-spacing:.08em;padding:3px 6px;border-radius:6px;white-space:nowrap}
+
+/* --- ANGOLI: schede bianche leggibili sul prato --- */
+#pistaBox .ha{background:rgba(255,255,255,.95)!important;color:var(--text)!important;text-shadow:none!important;border-radius:10px!important;box-shadow:0 3px 12px rgba(15,26,43,.2)}
+#pistaBox #haBoost.ha{background:none!important;box-shadow:none!important}
+#haPos{border-left:4px solid #e10600!important}
+#haPos b{color:var(--text)!important}#haPos span{color:var(--muted)!important}
+#haGiro span{color:var(--muted)!important}#haGiro b{color:var(--text)!important}
+#haMeteo b{color:var(--text)!important}#haMeteo span{color:var(--muted)!important}
+#haGommaBox .g{background:#fff!important;color:var(--text)!important;box-shadow:none!important}
+#haGommaBox b{color:var(--text)}#haGommaBox b.alta{color:#d97706}#haGommaBox b.crit{color:#dc2626}
+#haGommaBox span{color:var(--muted)!important}#haGommaBox .gBar{background:#e3e7ee}
+#haEnBox{background:rgba(255,255,255,.95)!important;border-radius:10px!important;box-shadow:0 3px 12px rgba(15,26,43,.2)}
+#haEnBox span{color:var(--muted)!important}#haEnBox b{color:var(--text)!important}.haEnBar{background:#e3e7ee!important}
+#haBoost #boost{background:#0f1a2b!important;color:#fff!important}
+#haBoost #boost.on{background:#16a34a!important;color:#fff!important}
+#haBoost #assistBtn{background:#fff!important;color:var(--text)!important;border:1px solid var(--line)!important}
+
+/* --- PLANCIA SOTTO LA PISTA: distacco + box (+ radio solo se serve) --- */
+#hud .sec,#hud #hudSlotBoost{display:none!important}
+#hud .row{display:flex;gap:8px;align-items:flex-start;flex-wrap:nowrap}
+#gapBox,#miniCol{align-self:flex-start;min-height:58px}
+#gapBox .gl{font-size:10px!important}
+#gapBox #haGapA b:only-child{color:#16a34a}
+#trackWrap .pitStallLabel{display:none!important}
+#gapBox{flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+#gapBox .gl{font:700 9px/1 'Saira Condensed',system-ui,sans-serif;letter-spacing:.16em;color:var(--muted)}
+#gapBox #haGapA,#gapBox #haGapD{display:flex;gap:6px;align-items:baseline}
+#gapBox #haGapA:empty,#gapBox #haGapD:empty{display:none}
+#gapBox b{font-family:'Chakra Petch',ui-monospace,monospace;font-size:18px;line-height:1.1}
+#gapBox #haGapA b{color:#dc2626}#gapBox #haGapD b{color:#16a34a}
+#gapBox span{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+#hud .pitCol{flex:1 1 0!important;min-width:0}
+#hud #pit{flex:1 1 auto!important;width:100%;min-height:58px!important}
+#miniCol{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
+#miniCol button{min-height:0;height:auto;flex:1;padding:6px 10px;font-size:11px}
+#miniCol #radioStoriaBtn{background:#fff4dc;border-color:#f5c26b;color:#7a4b00}
+body:not(.tabellone) #classificaPanel,body:not(.tabellone) #eventiPanel{display:none!important}
+
+/* --- POSIZIONI COMPATTE --- */
+#posCompatte{display:none;margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:6px}
+#posCompatte.on{display:block}
+#posCompatte .pr{display:flex;align-items:center;gap:8px;height:30px;padding:0 8px;border-radius:8px;font-size:13px}
+#posCompatte .pr:nth-child(even){background:#f8fafd}
+#posCompatte .pr.me{background:#fff4dc;font-weight:800}
+#posCompatte .pr b{width:30px;font-family:'Chakra Petch',ui-monospace,monospace}
+#posCompatte .pr i{width:4px;height:16px;border-radius:2px;flex:0 0 4px}
+#posCompatte .pr span{flex:1;font-weight:700;letter-spacing:.04em}
+#posCompatte .pr em{font-style:normal;font-family:'Chakra Petch',ui-monospace,monospace;color:var(--muted);font-size:12px}
+#posCompatte .pr u{text-decoration:none;width:18px;height:18px;border-radius:50%;border:2.5px solid #ccc;display:grid;place-items:center;font-size:9px;font-weight:800}
+#posCompatte .pr u.soft{border-color:#ef4444}#posCompatte .pr u.medium{border-color:#eab308}#posCompatte .pr u.hard{border-color:#9ca3af}
+#posCompatte .pr u.inter{border-color:#22c55e}#posCompatte .pr u.wet{border-color:#3b82f6}
+#posCompatte .sep{text-align:center;color:var(--muted);font-size:11px;line-height:14px}
+</style>
+<script>
+// v1.9.0 - Pista disegnata come un circuito vero (prato, alberi, tribune,
+// asfalto con cordoli e linea di mezzeria, pit lane visibile), vista dall'alto
+// piatta, distacco spostato accanto al box e classifica compatta sotto.
+(function(){
+const NS="http://www.w3.org/2000/svg";
+// vista dall'alto piatta: si spegne una sola volta la vista 3D, poi decide l'utente
+try{if(localStorage.getItem("f1Grafica_v190")!=="1"){localStorage.setItem("f1Vista3d_v170","0");localStorage.setItem("f1Grafica_v190","1");}}catch(e){}
+const v3=()=>{try{return localStorage.getItem("f1Vista3d_v170")!=="0";}catch(e){return false;}};
+document.body.classList.toggle("vista3d",v3());
+if($("setV3d")){$("setV3d").textContent=v3()?"ON":"OFF";$("setV3d").classList.toggle("on",v3());}
+if(!v3()){const w=$("trackWrap"),b=$("pistaBox");if(w){w.style.top="";w.style.height="";}if(b)b.style.height="";}
+
+function rng(seed){let s=7;for(const ch of String(seed))s=(s*31+ch.charCodeAt(0))>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+function el(tag,attrs,parent){const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);if(parent)parent.appendChild(n);return n;}
+function larghezzaPiena(){const b=$("trackPath").getBBox();return Math.max(b.width,b.height)*.034;}
+
+function disegnaDecor(){
+ const g=$("trackRot"),path=$("trackPath");if(!g||!path)return;
+ const vecchio=$("decorPista");if(vecchio)vecchio.remove();
+ let bo=$("trackBordo");
+ if(!bo){bo=document.createElementNS(NS,"path");bo.id="trackBordo";bo.setAttribute("class","trackBordo");}
+ bo.setAttribute("d",path.getAttribute("d"));g.insertBefore(bo,path);
+ const d=el("g",{id:"decorPista"});g.insertBefore(d,g.firstChild);
+ const b=path.getBBox(),W=larghezzaPiena(),len=path.getTotalLength();
+ if(!(len>0&&W>0))return;
+ const pts=[];for(let i=0;i<300;i++){const p=path.getPointAtLength(len*i/300);pts.push([p.x,p.y]);}
+ const pl=g.querySelector(".pitLane");
+ if(pl&&pl.getAttribute("points"))pl.getAttribute("points").trim().split(/\s+/).forEach(s=>{const q=s.split(",").map(Number);if(isFinite(q[0])&&isFinite(q[1]))pts.push(q);});
+ const dist=(x,y)=>{let m=1e18;for(const p of pts){const q=(p[0]-x)*(p[0]-x)+(p[1]-y)*(p[1]-y);if(q<m)m=q;}return Math.sqrt(m);};
+ const r=rng(circuit.id||"pista"),mg=W*1.2;
+ const casuale=()=>[b.x-mg+r()*(b.width+2*mg),b.y-mg+r()*(b.height+2*mg)];
+ // un laghetto
+ for(let t=0;t<160;t++){const [x,y]=casuale(),rx=W*2.2,ry=W*1.3;
+   if(dist(x,y)>Math.max(rx,ry)+W*1.4){el("ellipse",{cx:x,cy:y,rx,ry,class:"lago",transform:`rotate(${Math.round(r()*60-30)} ${x} ${y})`},d);break;}}
+ // tribune lungo il rettilineo d'arrivo, dal lato opposto alla pit lane
+ const p0=path.getPointAtLength(len*.02),p1=path.getPointAtLength(len*.04);
+ const dx=p1.x-p0.x,dy=p1.y-p0.y,m=Math.hypot(dx,dy)||1,nx=-dy/m,ny=dx/m,ang=Math.atan2(dy,dx)*180/Math.PI;
+ let lato=1;
+ if(pl&&pl.getAttribute("points")){const q=pl.getAttribute("points").trim().split(/\s+/).map(s=>s.split(",").map(Number)).filter(v=>isFinite(v[0]));
+   if(q.length){const c=q[Math.floor(q.length/2)];lato=((c[0]-p0.x)*nx+(c[1]-p0.y)*ny)>0?-1:1;}}
+ [0,.035].forEach(f=>{const p=path.getPointAtLength(len*(.015+f)),cx=p.x+nx*lato*W*2.3,cy=p.y+ny*lato*W*2.3;
+   if(dist(cx,cy)<W*1.5)return;
+   const L=W*5,H=W*1.3,gr=el("g",{transform:`translate(${cx} ${cy}) rotate(${ang})`},d);
+   el("rect",{x:-L/2,y:-H/2,width:L,height:H,rx:W*.15,class:"tribuna"},gr);
+   el("rect",{x:-L/2,y:(lato>0?H/2-H*.28:-H/2),width:L,height:H*.28,class:"tetto"},gr);
+   for(let k=1;k<6;k++)el("line",{x1:-L/2+L*k/6,y1:-H/2,x2:-L/2+L*k/6,y2:H/2,class:"fila"},gr);});
+ // alberi, a gruppetti, mai sull'asfalto
+ let messi=0;
+ for(let t=0;t<1200&&messi<55;t++){
+   const [x,y]=casuale(),rad=W*(.38+r()*.32);
+   if(dist(x,y)<W*1.15+rad)continue;
+   if(d.querySelector(".lago")){const l=d.querySelector(".lago");if(Math.hypot(x-l.cx.baseVal.value,y-l.cy.baseVal.value)<W*2.6+rad)continue;}
+   el("circle",{cx:x+rad*.25,cy:y+rad*.3,r:rad,class:"ombra"},d);
+   el("circle",{cx:x,cy:y,r:rad,class:"chioma"},d);
+   el("circle",{cx:x-rad*.28,cy:y-rad*.3,r:rad*.45,class:"luce"},d);
+   messi++;
+ }
+}
+function stile(){
+ const path=$("trackPath");if(!path)return;
+ const W=(camVicina?13/metriPerUnita():larghezzaPiena());if(!(W>0))return;
+ path.style.strokeWidth=W.toFixed(2);
+ const bo=$("trackBordo");if(bo)bo.style.strokeWidth=(W*1.3).toFixed(2);
+ const e=$("trackEdge");if(e){e.style.strokeWidth=(W*.07).toFixed(2);e.style.strokeDasharray=`${(W*.8).toFixed(2)} ${(W*.7).toFixed(2)}`;}
+ const q=s=>document.querySelectorAll("#trackSvg "+s);
+ q(".pitLane").forEach(n=>n.style.strokeWidth=(W*.55).toFixed(2));
+ q(".pitLaneEdge").forEach(n=>n.style.strokeWidth=(W*.05).toFixed(2));
+ q(".pitStall").forEach(n=>n.style.strokeWidth=(W*.08).toFixed(2));
+ q(".startLine").forEach(n=>n.style.strokeWidth=(W*.35).toFixed(2));
+}
+const _setup=setupTrack;
+setupTrack=function(...a){const r=_setup(...a);try{disegnaDecor();stile();}catch(e){}return r;};
+// vista piatta: la pista sta sempre in orizzontale (come una diretta TV),
+// si gira solo un tracciato piu' alto che largo
+const _inq=inquadraPista;
+inquadraPista=function(){
+ if(v3())return _inq();
+ const g=$("trackRot");if(!g)return _inq();
+ g.removeAttribute("transform");g.querySelectorAll("text").forEach(t=>t.removeAttribute("transform"));
+ calcolaVistaIntera();
+ const p=vbIntera.split(" ").map(Number),w=p[2],h=p[3];if(!(w>0&&h>0))return;
+ const cx=p[0]+w/2,cy=p[1]+h/2;
+ pistaRuotata=h>w*1.05;
+ if(pistaRuotata){
+   g.setAttribute("transform",`rotate(-90 ${cx.toFixed(1)} ${cy.toFixed(1)})`);
+   g.querySelectorAll("text").forEach(t=>{const x=t.getAttribute("x"),y=t.getAttribute("y");if(x!=null&&y!=null)t.setAttribute("transform",`rotate(90 ${x} ${y})`);});
+   vbIntera=`${(cx-h/2).toFixed(1)} ${(cy-w/2).toFixed(1)} ${h.toFixed(1)} ${w.toFixed(1)}`;
+ }
+ const wr=$("trackWrap"),bx=$("pistaBox");if(wr)wr.style.top="";if(bx)bx.style.height="";
+ altezzaPiatta();
+ if(!camVicina)aggiornaCamera();
+};
+function altezzaPiatta(){
+ const q=vbIntera.split(" ").map(Number),wrap=$("trackWrap"),L=wrap.clientWidth||360;
+ if(!(q[2]>0&&q[3]>0))return;
+ // spazio sopra e sotto per gli angoli (posizione, giro, gomma, boost)
+ wrap.style.height=Math.round(Math.min(Math.max(L*q[3]/q[2]+130,L*.72),L*1.1))+"px";
+}
+const _adP=adattaAltezzaPista;
+adattaAltezzaPista=function(){if(v3())return _adP();altezzaPiatta();};
+const _cam=aggiornaCamera;
+aggiornaCamera=function(...a){const r=_cam(...a);try{stile();}catch(e){}return r;};
+
+// --- plancia: distacco accanto al box, radio solo con pioggia o gomme consumate
+const row=document.querySelector("#hud .row"),pitCol=$("hudSlotPit");
+const gapBox=document.createElement("div");gapBox.id="gapBox";gapBox.setAttribute("data-testid","hud-gap-box");
+gapBox.innerHTML='<span class="gl">DISTACCO</span>';
+if(pitCol&&row){row.insertBefore(gapBox,pitCol);}
+["haGapA","haGapD"].forEach(id=>{const n=$(id);if(n)gapBox.appendChild(n);});
+const mini=document.createElement("div");mini.id="miniCol";
+if(pitCol)pitCol.after(mini);
+if($("radioStoriaBtn"))mini.appendChild($("radioStoriaBtn"));
+if($("pause")){mini.appendChild($("pause"));$("pause").setAttribute("data-testid","pause-button");}
+
+// --- classifica compatta sotto la plancia
+const lista=document.createElement("div");lista.id="posCompatte";lista.setAttribute("data-testid","compact-standings");
+$("hud").after(lista);
+const NOMI={soft:"S",medium:"M",hard:"H",inter:"I",wet:"W"};
+const sig=c=>(c.name.split(" ").pop()||c.name).slice(0,3).toUpperCase();
+function aggiorna(){
+ const vis=(running||startPrepared||raceEnded)&&!qRunning;
+ lista.classList.toggle("on",vis);
+ const pc=playerCar();
+ const rb=$("radioStoriaBtn");
+ if(rb){const M=window.METEO||{};rb.style.display=(pc&&((M.rain||0)>.05||(M.wet||0)>=.18||pc.tyreWear>=70))?"":"none";}
+ if(!vis||!pc)return;
+ const o=order(),i=o.indexOf(pc),lead=o[0];
+ const idx=new Set([0,1,2]);for(let k=i-2;k<=i+2;k++)if(k>=0&&k<o.length)idx.add(k);
+ const sel=[...idx].filter(k=>k<o.length).sort((a,b)=>a-b);
+ let h="",prima=-1;
+ sel.forEach(k=>{
+   if(prima>=0&&k>prima+1)h+='<div class="sep">···</div>';prima=k;
+   const c=o[k],gap=k===0?"LEADER":c.retired?"RIT":c.inPit?"BOX":"+"+gapSec(lead,c).toFixed(1);
+   h+=`<div class="pr${c===pc?" me":""}"><b>P${k+1}</b><i style="background:${coloreSquadra(c.team)}"></i><span>${sig(c)}</span><em>${gap}</em><u class="${c.comp}">${NOMI[c.comp]||"?"}</u></div>`;
+ });
+ lista.innerHTML=h;
+}
+setInterval(()=>{try{aggiorna();}catch(e){}},500);
+
+try{setupTrack();render();}catch(e){}
+if($("homeVersione"))$("homeVersione").textContent="v1.9.0";
+})();
+</script>
+
 </body>
 </html>
