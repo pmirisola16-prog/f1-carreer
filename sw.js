@@ -6,7 +6,7 @@
 // REGOLA: a ogni pubblicazione si cambia VERSIONE. Se non si cambia, il
 // telefono continua a servire il file vecchio dalla cache e sembra che le
 // modifiche non siano mai state fatte.
-const VERSIONE = "1.8.2";
+const VERSIONE = "2.0.0";
 const CACHE = "f1carriera-" + VERSIONE;
 
 const GUSCIO = [
